@@ -1,5 +1,9 @@
 <p align="center">
-  <img src="branding/arivemb-logo-full.jpg" width="720" alt="ArivEmb — Embedded Intelligence">
+  <img src="branding/arivemb-symbol.jpg" width="120" alt="ArivEmb">
+</p>
+
+<p align="center">
+  <strong>ArivEmb · Embedded Intelligence</strong>
 </p>
 
 <h1 align="center">CardKeep</h1>
