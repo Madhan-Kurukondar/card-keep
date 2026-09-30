@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="branding/arivemb-mark.svg" width="72" alt="ArivEmb">
+  <img src="branding/arivemb-symbol.jpg" width="72" alt="ArivEmb">
 </p>
 
 <h1 align="center">CardKeep</h1>
@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Madhan-Kurukondar/card-keep/releases/latest/download/CardKeep-Android-v0.1.2.apk"><strong>Download CardKeep for Android</strong></a>
+  <a href="https://github.com/Madhan-Kurukondar/card-keep/releases/latest/download/CardKeep-Android-v0.2.0.apk"><strong>Download CardKeep for Android</strong></a>
 </p>
 
 ---
@@ -41,7 +41,7 @@ You do **not** need to know GitHub or programming.
 
 Tap:
 
-### [Download CardKeep-Android-v0.1.2.apk](https://github.com/Madhan-Kurukondar/card-keep/releases/latest/download/CardKeep-Android-v0.1.2.apk)
+### [Download CardKeep-Android-v0.2.0.apk](https://github.com/Madhan-Kurukondar/card-keep/releases/latest/download/CardKeep-Android-v0.2.0.apk)
 
 If the direct link does not work, open the [latest CardKeep release](https://github.com/Madhan-Kurukondar/card-keep/releases/latest) and download the file ending in **.apk**.
 
@@ -49,7 +49,7 @@ If the direct link does not work, open the [latest CardKeep release](https://git
 
 On your phone, open **Downloads** or your browser's downloaded files and tap:
 
-`CardKeep-Android-v0.1.2.apk`
+`CardKeep-Android-v0.2.0.apk`
 
 ### 3. Allow installation if Android asks
 
@@ -70,6 +70,23 @@ The first time you press **Scan business card**, Android will ask for Camera per
 Choose **While using the app**.
 
 CardKeep only requests Camera permission for scanning cards.
+
+## Conference Mode
+
+Conference Mode is designed for trade fairs, exhibitions and recurring events such as **Embedded World**, **SMM** or **IAA**.
+
+1. Create a conference with its name, location, dates and optional default tags.
+2. Open that conference and tap **Scan Next Card**.
+3. Every contact captured there stays grouped inside that conference area in CardKeep.
+4. CardKeep automatically prefills:
+   - **Event / where we met** = conference name
+   - **Location** = conference location
+   - **Date met** = current scan date
+   - **How we met** = conference default
+   - **Tags** = conference default tags
+5. The prefilled values remain editable for individual contacts.
+
+This avoids repetitive typing and makes post-event sorting and follow-up much easier.
 
 ## Privacy
 
@@ -104,11 +121,12 @@ Making a fork or pull request does **not** give anyone permission to directly ch
 
 CardKeep is an early public Android release. Please report bugs or feature requests through [GitHub Issues](https://github.com/Madhan-Kurukondar/card-keep/issues).
 
-Current version: **v0.1.2**
+Current version: **v0.2.0**
 
 ### Current features
 
 - business-card photo capture
+- Conference Mode with event-grouped contacts and automatic context prefilling
 - import existing business-card image
 - on-device OCR
 - editable contact fields
