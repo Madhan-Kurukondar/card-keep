@@ -18,8 +18,8 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@drawable/arivemb_mark"
-        android:roundIcon="@drawable/arivemb_mark"
+        android:icon="@drawable/arivemb_symbol"
+        android:roundIcon="@drawable/arivemb_symbol"
         android:label="CardKeep"
         android:supportsRtl="true"
         android:usesCleartextTraffic="false"
