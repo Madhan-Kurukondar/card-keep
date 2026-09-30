@@ -66,13 +66,16 @@ public class MainActivity extends Activity {
     private static final int CYAN = Color.rgb(38, 198, 218);
 
     private final List<ContactRecord> contacts = new ArrayList<>();
+    private final List<ConferenceRecord> conferences = new ArrayList<>();
     private final Map<String, EditText> editorFields = new LinkedHashMap<>();
+    private final Map<String, EditText> conferenceFields = new LinkedHashMap<>();
 
     private Uri pendingCameraUri;
     private ContactRecord editingRecord;
     private ContactRecord pendingExportRecord;
     private LinearLayout contactListContainer;
     private EditText searchBox;
+    private ConferenceRecord currentConference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,13 +83,16 @@ public class MainActivity extends Activity {
         getWindow().setStatusBarColor(SILICON);
         getWindow().setNavigationBarColor(SILICON);
         contacts.addAll(ContactStore.load(this));
+        conferences.addAll(ConferenceStore.load(this));
         showHome();
     }
 
     @Override
     public void onBackPressed() {
         if (editingRecord != null) {
-            showHome();
+            returnFromEditor();
+        } else if (currentConference != null) {
+            showConferenceHub();
         } else {
             super.onBackPressed();
         }
@@ -94,6 +100,7 @@ public class MainActivity extends Activity {
 
     private void showHome() {
         editingRecord = null;
+        currentConference = null;
         editorFields.clear();
 
         ScrollView scroll = new ScrollView(this);
@@ -112,7 +119,7 @@ public class MainActivity extends Activity {
         brand.setPadding(dp(2), dp(2), dp(2), dp(12));
 
         ImageView brandMark = new ImageView(this);
-        brandMark.setImageResource(com.madhankurukondar.cardkeep.R.drawable.arivemb_mark);
+        brandMark.setImageResource(com.madhankurukondar.cardkeep.R.drawable.arivemb_symbol);
         LinearLayout.LayoutParams markLp = new LinearLayout.LayoutParams(dp(52), dp(52));
         markLp.setMargins(0, 0, dp(12), 0);
         brand.addView(brandMark, markLp);
@@ -163,8 +170,23 @@ public class MainActivity extends Activity {
             r.metDate = today();
             showEditor(r);
         }));
+        root.addView(secondaryButton("◈  CONFERENCE MODE", v -> showConferenceHub()));
 
-        section(root, "CONTACTS · " + contacts.size());
+        section(root, "CONFERENCES · " + conferences.size());
+        if (conferences.isEmpty()) {
+            LinearLayout emptyConference = column();
+            emptyConference.setPadding(dp(16), dp(16), dp(16), dp(16));
+            emptyConference.setBackground(roundedBackground(PANEL, CIRCUIT, 16));
+            emptyConference.addView(text("Create a conference once. Cards scanned inside it are automatically grouped and prefilled with that event context."));
+            root.addView(emptyConference);
+        } else {
+            for (ConferenceRecord conference : conferences) {
+                root.addView(conferenceCard(conference));
+            }
+        }
+        root.addView(secondaryButton("＋  CREATE CONFERENCE", v -> showConferenceEditor(new ConferenceRecord())));
+
+        section(root, "GENERAL CONTACTS · " + generalContactCount());
 
         searchBox = edit("⌕  Search name, company, event, tag…", "", false);
         root.addView(searchBox);
@@ -195,6 +217,7 @@ public class MainActivity extends Activity {
 
         int shown = 0;
         for (ContactRecord r : contacts) {
+            if (r.conferenceId != null && !r.conferenceId.isEmpty()) continue;
             String haystack = String.join(" ",
                     safe(r.name), safe(r.company), safe(r.title), safe(r.email),
                     safe(r.event), safe(r.tags), safe(r.discussion),
@@ -273,6 +296,370 @@ public class MainActivity extends Activity {
     }
 
 
+    private void showConferenceHub() {
+        editingRecord = null;
+        currentConference = null;
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setBackgroundColor(SILICON);
+
+        LinearLayout root = column();
+        root.setPadding(dp(18), dp(16), dp(18), dp(36));
+        root.setBackgroundColor(SILICON);
+        scroll.addView(root);
+
+        Button back = ghostButton("←  BACK", v -> showHome());
+        LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(dp(112), dp(46));
+        backLp.setMargins(0, 0, 0, dp(12));
+        back.setLayoutParams(backLp);
+        root.addView(back);
+
+        root.addView(monoLabel("CARDKEEP · CONFERENCE MODE"));
+        TextView title = heading("Conferences");
+        title.setTextSize(28);
+        title.setPadding(0, dp(5), 0, dp(3));
+        root.addView(title);
+
+        TextView helper = smallText("Create Embedded World, SMM, IAA or any event once. Contacts scanned inside it remain grouped there and inherit its event context automatically.");
+        helper.setPadding(0, 0, 0, dp(12));
+        root.addView(helper);
+
+        root.addView(primaryButton("＋  CREATE CONFERENCE", v -> showConferenceEditor(new ConferenceRecord())));
+
+        section(root, "YOUR CONFERENCES · " + conferences.size());
+        if (conferences.isEmpty()) {
+            LinearLayout empty = column();
+            empty.setPadding(dp(18), dp(20), dp(18), dp(20));
+            empty.setBackground(roundedBackground(PANEL, CIRCUIT, 16));
+            TextView emptyText = text("No conferences yet.");
+            emptyText.setGravity(Gravity.CENTER);
+            empty.addView(emptyText);
+            root.addView(empty);
+        } else {
+            for (ConferenceRecord conference : conferences) root.addView(conferenceCard(conference));
+        }
+
+        setContentView(scroll);
+    }
+
+    private View conferenceCard(ConferenceRecord conference) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setClickable(true);
+        card.setFocusable(true);
+        card.setElevation(dp(2));
+        card.setBackground(rippleBackground(PANEL, CIRCUIT, 16, 0x33D83FB5));
+
+        View accent = new View(this);
+        accent.setBackground(roundedBackground(MAGENTA, MAGENTA, 3));
+        LinearLayout.LayoutParams accentLp = new LinearLayout.LayoutParams(dp(4), LinearLayout.LayoutParams.MATCH_PARENT);
+        accentLp.setMargins(0, dp(10), dp(12), dp(10));
+        card.addView(accent, accentLp);
+
+        LinearLayout body = column();
+        body.setPadding(0, dp(13), dp(14), dp(13));
+        body.addView(monoLabel("◈ CONFERENCE"));
+
+        TextView name = heading(conference.name.isEmpty() ? "Unnamed conference" : conference.name);
+        name.setTextSize(18);
+        name.setPadding(0, dp(4), 0, dp(2));
+        body.addView(name);
+
+        String meta = joinNonBlank(" · ", conference.location,
+                joinDateRange(conference.startDate, conference.endDate));
+        if (!meta.isEmpty()) body.addView(smallText(meta));
+
+        TextView count = smallText(conferenceContactCount(conference.id) + " contacts");
+        count.setTextColor(CYAN);
+        count.setPadding(0, dp(6), 0, 0);
+        body.addView(count);
+
+        card.addView(body, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+
+        TextView arrow = heading("→");
+        arrow.setTextColor(MAGENTA_LIGHT);
+        arrow.setGravity(Gravity.CENTER);
+        card.addView(arrow, new LinearLayout.LayoutParams(dp(42), LinearLayout.LayoutParams.MATCH_PARENT));
+
+        card.setOnClickListener(v -> showConference(conference));
+
+        LinearLayout wrapper = column();
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, 0, 0, dp(10));
+        wrapper.setLayoutParams(lp);
+        wrapper.addView(card);
+        return wrapper;
+    }
+
+    private void showConference(ConferenceRecord conference) {
+        currentConference = conference;
+        editingRecord = null;
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setBackgroundColor(SILICON);
+
+        LinearLayout root = column();
+        root.setPadding(dp(18), dp(16), dp(18), dp(36));
+        root.setBackgroundColor(SILICON);
+        scroll.addView(root);
+
+        Button back = ghostButton("←  CONFERENCES", v -> showConferenceHub());
+        LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(dp(162), dp(46));
+        backLp.setMargins(0, 0, 0, dp(12));
+        back.setLayoutParams(backLp);
+        root.addView(back);
+
+        root.addView(monoLabel("◈ CONFERENCE MODE ACTIVE"));
+
+        TextView title = heading(conference.name);
+        title.setTextSize(28);
+        title.setPadding(0, dp(5), 0, dp(3));
+        root.addView(title);
+
+        String meta = joinNonBlank(" · ", conference.location,
+                joinDateRange(conference.startDate, conference.endDate));
+        if (!meta.isEmpty()) {
+            TextView metaView = smallText(meta);
+            metaView.setPadding(0, 0, 0, dp(10));
+            root.addView(metaView);
+        }
+
+        LinearLayout defaults = column();
+        defaults.setPadding(dp(14), dp(12), dp(14), dp(12));
+        defaults.setBackground(roundedBackground(NAVY, MAGENTA_DEEP, 14));
+        defaults.addView(monoLabel("AUTO-FILLED FOR EVERY NEW CONTACT"));
+        defaults.addView(smallText("Event / where we met: " + conference.name));
+        if (!conference.location.isEmpty()) defaults.addView(smallText("Location: " + conference.location));
+        defaults.addView(smallText("Date met: current scan date"));
+        if (!conference.defaultHowMet.isEmpty()) defaults.addView(smallText("How we met: " + conference.defaultHowMet));
+        if (!conference.defaultTags.isEmpty()) defaults.addView(smallText("Tags: " + conference.defaultTags));
+        LinearLayout.LayoutParams defaultLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        defaultLp.setMargins(0, dp(6), 0, dp(12));
+        root.addView(defaults, defaultLp);
+
+        root.addView(primaryButton("▣  SCAN NEXT CARD", v -> startCamera()));
+        root.addView(secondaryButton("⌁  IMPORT CARD IMAGE", v -> startGallery()));
+        root.addView(secondaryButton("＋  ADD CONTACT MANUALLY", v -> {
+            ContactRecord r = new ContactRecord();
+            applyConferenceDefaults(r);
+            showEditor(r);
+        }));
+        root.addView(ghostButton("✎  EDIT CONFERENCE", v -> showConferenceEditor(conference)));
+
+        section(root, "CONTACTS · " + conferenceContactCount(conference.id));
+        int shown = 0;
+        for (ContactRecord r : contacts) {
+            if (!conference.id.equals(r.conferenceId)) continue;
+            addConferenceContactCard(root, r);
+            shown++;
+        }
+
+        if (shown == 0) {
+            LinearLayout empty = column();
+            empty.setPadding(dp(18), dp(20), dp(18), dp(20));
+            empty.setBackground(roundedBackground(PANEL, CIRCUIT, 16));
+            TextView emptyText = text("No contacts in this conference yet. Scan the first card.");
+            emptyText.setGravity(Gravity.CENTER);
+            empty.addView(emptyText);
+            root.addView(empty);
+        }
+
+        setContentView(scroll);
+    }
+
+    private void addConferenceContactCard(LinearLayout root, ContactRecord r) {
+        LinearLayout card = new LinearLayout(this);
+        card.setOrientation(LinearLayout.HORIZONTAL);
+        card.setBackground(rippleBackground(PANEL, CIRCUIT, 16, 0x33D83FB5));
+        card.setClickable(true);
+        card.setFocusable(true);
+
+        View accent = new View(this);
+        accent.setBackground(roundedBackground(MAGENTA, MAGENTA, 3));
+        LinearLayout.LayoutParams accentLp = new LinearLayout.LayoutParams(dp(4), LinearLayout.LayoutParams.MATCH_PARENT);
+        accentLp.setMargins(0, dp(10), dp(12), dp(10));
+        card.addView(accent, accentLp);
+
+        LinearLayout body = column();
+        body.setPadding(0, dp(13), dp(14), dp(13));
+
+        TextView name = heading(r.name.isEmpty() ? "Unnamed contact" : r.name);
+        name.setTextSize(18);
+        body.addView(name);
+
+        String role = joinNonBlank(" · ", r.title, r.company);
+        if (!role.isEmpty()) body.addView(smallText(role));
+
+        if (!r.nextAction.isEmpty()) {
+            TextView next = smallText("→ " + r.nextAction);
+            next.setTextColor(WHITE);
+            next.setPadding(0, dp(6), 0, 0);
+            body.addView(next);
+        }
+
+        if (!r.followUp.isEmpty()) {
+            TextView follow = smallText("⌁ Follow-up  " + r.followUp);
+            follow.setTextColor(CYAN);
+            follow.setPadding(0, dp(3), 0, 0);
+            body.addView(follow);
+        }
+
+        card.addView(body, new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
+        card.setOnClickListener(v -> showEditor(r));
+
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, 0, 0, dp(10));
+        root.addView(card, lp);
+    }
+
+    private void showConferenceEditor(ConferenceRecord conference) {
+        conferenceFields.clear();
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setBackgroundColor(SILICON);
+
+        LinearLayout root = column();
+        root.setPadding(dp(18), dp(16), dp(18), dp(36));
+        root.setBackgroundColor(SILICON);
+        scroll.addView(root);
+
+        Button back = ghostButton("←  BACK", v -> {
+            ConferenceRecord existing = findConference(conference.id);
+            if (existing != null) showConference(existing);
+            else showConferenceHub();
+        });
+        LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(dp(112), dp(46));
+        backLp.setMargins(0, 0, 0, dp(12));
+        back.setLayoutParams(backLp);
+        root.addView(back);
+
+        root.addView(monoLabel("CARDKEEP · CONFERENCE SETUP"));
+
+        TextView title = heading(findConference(conference.id) == null ? "Create conference" : "Edit conference");
+        title.setTextSize(28);
+        title.setPadding(0, dp(5), 0, dp(8));
+        root.addView(title);
+
+        addConferenceField(root, "name", "Conference name · e.g. Embedded World 2027", conference.name, false);
+        addConferenceField(root, "location", "Location · e.g. Nuremberg, Germany", conference.location, false);
+        addConferenceField(root, "startDate", "Start date · YYYY-MM-DD", conference.startDate, false);
+        addConferenceField(root, "endDate", "End date · YYYY-MM-DD", conference.endDate, false);
+        addConferenceField(root, "defaultHowMet", "Default how we met", conference.defaultHowMet, false);
+        addConferenceField(root, "defaultTags", "Default tags · comma separated", conference.defaultTags, false);
+        addConferenceField(root, "notes", "Conference notes", conference.notes, true);
+
+        LinearLayout info = column();
+        info.setPadding(dp(14), dp(12), dp(14), dp(12));
+        info.setBackground(roundedBackground(NAVY, CIRCUIT, 14));
+        info.addView(monoLabel("PREFILLING"));
+        TextView infoText = smallText("Cards scanned inside this conference automatically get the conference name in Event / where we met. Location, date, how-you-met and tags are also prefilled and remain editable.");
+        infoText.setPadding(0, dp(5), 0, 0);
+        info.addView(infoText);
+        LinearLayout.LayoutParams infoLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        infoLp.setMargins(0, dp(8), 0, dp(10));
+        root.addView(info, infoLp);
+
+        root.addView(primaryButton("✓  SAVE CONFERENCE", v -> {
+            conference.name = conferenceField("name");
+            conference.location = conferenceField("location");
+            conference.startDate = conferenceField("startDate");
+            conference.endDate = conferenceField("endDate");
+            conference.defaultHowMet = conferenceField("defaultHowMet");
+            conference.defaultTags = conferenceField("defaultTags");
+            conference.notes = conferenceField("notes");
+
+            if (conference.name.isEmpty()) {
+                toast("Conference name is required");
+                return;
+            }
+
+            ConferenceStore.upsert(this, conferences, conference);
+            toast("Conference saved");
+            showConference(conference);
+        }));
+
+        setContentView(scroll);
+    }
+
+    private void addConferenceField(LinearLayout root, String key, String hint, String value, boolean multiline) {
+        EditText field = edit(hint, value, multiline);
+        conferenceFields.put(key, field);
+        root.addView(field);
+    }
+
+    private String conferenceField(String key) {
+        EditText e = conferenceFields.get(key);
+        return e == null ? "" : e.getText().toString().trim();
+    }
+
+    private void applyConferenceDefaults(ContactRecord record) {
+        if (currentConference == null) return;
+        record.conferenceId = currentConference.id;
+        record.event = currentConference.name;
+        record.location = currentConference.location;
+        record.metDate = today();
+        record.howMet = currentConference.defaultHowMet;
+        record.tags = currentConference.defaultTags;
+    }
+
+    private ConferenceRecord findConference(String conferenceId) {
+        if (conferenceId == null || conferenceId.isEmpty()) return null;
+        for (ConferenceRecord conference : conferences) {
+            if (conference.id.equals(conferenceId)) return conference;
+        }
+        return null;
+    }
+
+    private int conferenceContactCount(String conferenceId) {
+        int count = 0;
+        for (ContactRecord r : contacts) {
+            if (conferenceId != null && conferenceId.equals(r.conferenceId)) count++;
+        }
+        return count;
+    }
+
+    private int generalContactCount() {
+        int count = 0;
+        for (ContactRecord r : contacts) {
+            if (r.conferenceId == null || r.conferenceId.isEmpty()) count++;
+        }
+        return count;
+    }
+
+    private String joinDateRange(String startDate, String endDate) {
+        if (startDate == null) startDate = "";
+        if (endDate == null) endDate = "";
+        if (startDate.isEmpty()) return endDate;
+        if (endDate.isEmpty() || startDate.equals(endDate)) return startDate;
+        return startDate + " → " + endDate;
+    }
+
+    private void returnFromEditor() {
+        if (editingRecord == null) {
+            if (currentConference != null) showConference(currentConference);
+            else showHome();
+            return;
+        }
+
+        ConferenceRecord conference = findConference(editingRecord.conferenceId);
+        editingRecord = null;
+        if (conference != null) showConference(conference);
+        else showHome();
+    }
+
     private void showEditor(ContactRecord record) {
         editingRecord = record;
         if (editingRecord.metDate == null || editingRecord.metDate.isEmpty()) editingRecord.metDate = today();
@@ -287,7 +674,11 @@ public class MainActivity extends Activity {
         root.setBackgroundColor(SILICON);
         scroll.addView(root);
 
-        Button back = ghostButton("←  BACK", v -> showHome());
+        if (record.conferenceId != null && !record.conferenceId.isEmpty() && currentConference == null) {
+            currentConference = findConference(record.conferenceId);
+        }
+
+        Button back = ghostButton("←  BACK", v -> returnFromEditor());
         LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(dp(112), dp(46));
         backLp.setMargins(0, 0, 0, dp(12));
         back.setLayoutParams(backLp);
@@ -314,6 +705,31 @@ public class MainActivity extends Activity {
         addField(root, "mobile", "Mobile", record.mobile, false, InputType.TYPE_CLASS_PHONE);
         addField(root, "website", "Website", record.website, false, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
         addField(root, "address", "Address", record.address, true);
+
+        if (record.conferenceId != null && !record.conferenceId.isEmpty()) {
+            ConferenceRecord linkedConference = findConference(record.conferenceId);
+            if (linkedConference != null) {
+                LinearLayout conferenceContext = column();
+                conferenceContext.setPadding(dp(14), dp(12), dp(14), dp(12));
+                conferenceContext.setBackground(roundedBackground(NAVY, MAGENTA_DEEP, 14));
+                conferenceContext.addView(monoLabel("◈ CONFERENCE CONTEXT"));
+
+                TextView contextName = heading(linkedConference.name);
+                contextName.setTextSize(18);
+                contextName.setPadding(0, dp(5), 0, dp(2));
+                conferenceContext.addView(contextName);
+
+                String contextMeta = joinNonBlank(" · ", linkedConference.location,
+                        joinDateRange(linkedConference.startDate, linkedConference.endDate));
+                if (!contextMeta.isEmpty()) conferenceContext.addView(smallText(contextMeta));
+
+                LinearLayout.LayoutParams contextLp = new LinearLayout.LayoutParams(
+                        LinearLayout.LayoutParams.MATCH_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT);
+                contextLp.setMargins(0, dp(16), 0, 0);
+                root.addView(conferenceContext, contextLp);
+            }
+        }
 
         section(root, "02 · MEETING CONTEXT");
         addField(root, "event", "Event / where we met", record.event, false);
@@ -365,7 +781,7 @@ public class MainActivity extends Activity {
             captureEditorIntoRecord();
             ContactStore.upsert(this, contacts, editingRecord);
             toast("Saved");
-            showHome();
+            returnFromEditor();
         }));
 
         root.addView(secondaryButton("＋  SAVE TO PHONE CONTACTS", v -> {
@@ -437,13 +853,17 @@ public class MainActivity extends Activity {
     private void deleteCurrentRecord() {
         if (editingRecord == null) return;
         ContactRecord target = editingRecord;
+        String conferenceId = target.conferenceId;
         contacts.removeIf(r -> r.id == target.id);
         ContactStore.save(this, contacts);
         if (target.imagePath != null && !target.imagePath.isEmpty()) {
             try { new File(target.imagePath).delete(); } catch (Exception ignored) {}
         }
         toast("Deleted");
-        showHome();
+        editingRecord = null;
+        ConferenceRecord conference = findConference(conferenceId);
+        if (conference != null) showConference(conference);
+        else showHome();
     }
 
     private void startCamera() {
@@ -550,7 +970,8 @@ public class MainActivity extends Activity {
 
                         ContactRecord r = BusinessCardParser.parse(result.getText());
                         r.imagePath = privateCopy.getAbsolutePath();
-                        r.metDate = today();
+                        applyConferenceDefaults(r);
+                        if (r.metDate == null || r.metDate.isEmpty()) r.metDate = today();
                         showEditor(r);
                     })
                     .addOnFailureListener(error -> {
@@ -560,7 +981,8 @@ public class MainActivity extends Activity {
 
                         ContactRecord r = new ContactRecord();
                         r.imagePath = privateCopy.getAbsolutePath();
-                        r.metDate = today();
+                        applyConferenceDefaults(r);
+                        if (r.metDate == null || r.metDate.isEmpty()) r.metDate = today();
                         toast("OCR could not read this card. You can enter the details manually.");
                         showEditor(r);
                     });
