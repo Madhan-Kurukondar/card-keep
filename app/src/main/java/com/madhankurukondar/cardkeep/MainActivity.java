@@ -309,11 +309,7 @@ public class MainActivity extends Activity {
         root.setBackgroundColor(SILICON);
         scroll.addView(root);
 
-        if (record.conferenceId != null && !record.conferenceId.isEmpty() && currentConference == null) {
-            currentConference = findConference(record.conferenceId);
-        }
-
-        Button back = ghostButton("←  BACK", v -> returnFromEditor());
+        Button back = ghostButton("←  BACK", v -> showHome());
         LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(dp(112), dp(46));
         backLp.setMargins(0, 0, 0, dp(12));
         back.setLayoutParams(backLp);
@@ -727,28 +723,6 @@ public class MainActivity extends Activity {
                         joinDateRange(linkedConference.startDate, linkedConference.endDate));
                 if (!contextMeta.isEmpty()) conferenceContext.addView(smallText(contextMeta));
 
-                LinearLayout.LayoutParams contextLp = new LinearLayout.LayoutParams(
-                        LinearLayout.LayoutParams.MATCH_PARENT,
-                        LinearLayout.LayoutParams.WRAP_CONTENT);
-                contextLp.setMargins(0, dp(16), 0, 0);
-                root.addView(conferenceContext, contextLp);
-            }
-        }
-
-        if (record.conferenceId != null && !record.conferenceId.isEmpty()) {
-            ConferenceRecord linkedConference = findConference(record.conferenceId);
-            if (linkedConference != null) {
-                LinearLayout conferenceContext = column();
-                conferenceContext.setPadding(dp(14), dp(12), dp(14), dp(12));
-                conferenceContext.setBackground(roundedBackground(NAVY, MAGENTA_DEEP, 14));
-                conferenceContext.addView(monoLabel("◈ CONFERENCE CONTEXT"));
-                TextView contextName = heading(linkedConference.name);
-                contextName.setTextSize(18);
-                contextName.setPadding(0, dp(5), 0, dp(2));
-                conferenceContext.addView(contextName);
-                String contextMeta = joinNonBlank(" · ", linkedConference.location,
-                        joinDateRange(linkedConference.startDate, linkedConference.endDate));
-                if (!contextMeta.isEmpty()) conferenceContext.addView(smallText(contextMeta));
                 LinearLayout.LayoutParams contextLp = new LinearLayout.LayoutParams(
                         LinearLayout.LayoutParams.MATCH_PARENT,
                         LinearLayout.LayoutParams.WRAP_CONTENT);
