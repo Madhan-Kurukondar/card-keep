@@ -84,3 +84,4 @@ jobs:
           else
             gh release create v0.2.0 dist/CardKeep-Android-v0.2.0.apk dist/CardKeep-Android-v0.2.0.sha256 --target "$GITHUB_SHA" --title "CardKeep Android v0.2.0" --notes-file RELEASE_NOTES.md --latest
           fi
+# release trigger after verified Conference Mode build
