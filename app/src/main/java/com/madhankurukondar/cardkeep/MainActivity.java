@@ -18,6 +18,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -81,12 +82,28 @@ public class MainActivity extends Activity {
         root.setPadding(dp(18), dp(18), dp(18), dp(32));
         scroll.addView(root);
 
+        LinearLayout brand = new LinearLayout(this);
+        brand.setOrientation(LinearLayout.HORIZONTAL);
+        brand.setGravity(Gravity.CENTER_VERTICAL);
+
+        ImageView brandMark = new ImageView(this);
+        brandMark.setImageResource(com.madhankurukondar.cardkeep.R.drawable.arivemb_mark);
+        LinearLayout.LayoutParams markLp = new LinearLayout.LayoutParams(dp(44), dp(44));
+        markLp.setMargins(0, 0, dp(10), 0);
+        brand.addView(brandMark, markLp);
+
+        LinearLayout brandText = column();
         TextView title = heading("CardKeep");
         title.setTextSize(28);
-        root.addView(title);
+        brandText.addView(title);
+        TextView byline = smallText("Open-source utility by ArivEmb");
+        brandText.addView(byline);
+        brand.addView(brandText);
+
+        root.addView(brand);
 
         TextView intro = text("Private business-card capture. Scan a card, keep why the contact matters and what you discussed, then save it to your phone contacts. No account, no ads, no CardKeep cloud.");
-        intro.setPadding(0, dp(6), 0, dp(16));
+        intro.setPadding(0, dp(10), 0, dp(16));
         root.addView(intro);
 
         root.addView(primaryButton("Scan business card", v -> startCamera()));
