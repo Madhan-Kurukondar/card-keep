@@ -1,9 +1,9 @@
 name: Build Android APK
 
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
+  pull_request:
+    branches: [ main ]
 
 permissions:
   contents: read
@@ -14,51 +14,23 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-
       - name: Set up Gradle 8.13
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.13'
-
       - name: Install Android SDK 36
         run: |
           yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
           "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
-
-      - name: Build installable APK
-        run: gradle --no-daemon :app:assembleDebug --stacktrace
-
-      - name: Verify APK
+      - name: Build and verify APK
         run: |
-          test -f app/build/outputs/apk/debug/app-debug.apk
-          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose app/build/outputs/apk/debug/app-debug.apk
-          PERMS="$("$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest permissions app/build/outputs/apk/debug/app-debug.apk)"
-          echo "$PERMS"
-          if echo "$PERMS" | grep -q "android.permission.INTERNET"; then
-            echo "Unexpected INTERNET permission in final APK"
-            exit 1
-          fi
-          if echo "$PERMS" | grep -q "android.permission.ACCESS_NETWORK_STATE"; then
-            echo "Unexpected ACCESS_NETWORK_STATE permission in final APK"
-            exit 1
-          fi
-          if ! echo "$PERMS" | grep -q "android.permission.CAMERA"; then
-            echo "Required CAMERA permission is missing from final APK"
-            exit 1
-          fi
-          mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk dist/CardKeep-Android-v0.2.0.apk
-          sha256sum dist/CardKeep-Android-v0.2.0.apk > dist/CardKeep-Android-v0.2.0.sha256
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: CardKeep-Android-v0.2.0
-          path: dist/
-          if-no-files-found: error
+          gradle --no-daemon :app:assembleDebug --stacktrace
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK"
+          "$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest permissions "$APK"

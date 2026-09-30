@@ -1,0 +1,70 @@
+name: Publish CardKeep v0.2.1
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - ".github/workflows/publish-v0.2.1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.13
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Install Android SDK 36
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Build canonical APK
+        run: gradle --no-daemon :app:assembleDebug --stacktrace
+
+      - name: Verify and package
+        run: |
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK"
+          PERMS="$("$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest permissions "$APK")"
+          echo "$PERMS"
+          echo "$PERMS" | grep -q "android.permission.CAMERA"
+          ! echo "$PERMS" | grep -q "android.permission.INTERNET"
+          ! echo "$PERMS" | grep -q "android.permission.ACCESS_NETWORK_STATE"
+          mkdir -p dist
+          cp "$APK" dist/CardKeep-Android-v0.2.1.apk
+          sha256sum dist/CardKeep-Android-v0.2.1.apk > dist/CardKeep-Android-v0.2.1.sha256
+
+      - name: Create public GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > RELEASE_NOTES.md <<'EOF'
+          # CardKeep Android v0.2.1
+
+          Packaging and branding repair release.
+
+          - exact supplied ArivEmb symbol used for the Android app icon and in-app branding
+          - exact supplied ArivEmb full logo used in the GitHub README
+          - ARM-only Android package to reduce APK size and improve phone installation/download reliability
+          - Conference Mode retained
+          - OCR, local storage, contact creation and vCard core unchanged
+          - no Internet permission
+          EOF
+
+          gh release create v0.2.1             dist/CardKeep-Android-v0.2.1.apk             dist/CardKeep-Android-v0.2.1.sha256             --target "$GITHUB_SHA"             --title "CardKeep Android v0.2.1"             --notes-file RELEASE_NOTES.md             --latest

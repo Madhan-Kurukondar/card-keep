@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="branding/arivemb-symbol.jpg" width="72" alt="ArivEmb">
+  <img src="branding/arivemb-logo-full.jpg" width="720" alt="ArivEmb — Embedded Intelligence">
 </p>
 
 <h1 align="center">CardKeep</h1>
@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Madhan-Kurukondar/card-keep/releases/latest/download/CardKeep-Android-v0.2.0.apk"><strong>Download CardKeep for Android</strong></a>
+  <a href="https://github.com/Madhan-Kurukondar/card-keep/releases/latest/download/CardKeep-Android-v0.2.1.apk"><strong>Download CardKeep for Android</strong></a>
 </p>
 
 ---
@@ -41,7 +41,7 @@ You do **not** need to know GitHub or programming.
 
 Tap:
 
-### [Download CardKeep-Android-v0.2.0.apk](https://github.com/Madhan-Kurukondar/card-keep/releases/latest/download/CardKeep-Android-v0.2.0.apk)
+### [Download CardKeep-Android-v0.2.1.apk](https://github.com/Madhan-Kurukondar/card-keep/releases/latest/download/CardKeep-Android-v0.2.1.apk)
 
 If the direct link does not work, open the [latest CardKeep release](https://github.com/Madhan-Kurukondar/card-keep/releases/latest) and download the file ending in **.apk**.
 
@@ -49,7 +49,7 @@ If the direct link does not work, open the [latest CardKeep release](https://git
 
 On your phone, open **Downloads** or your browser's downloaded files and tap:
 
-`CardKeep-Android-v0.2.0.apk`
+`CardKeep-Android-v0.2.1.apk`
 
 ### 3. Allow installation if Android asks
 
@@ -121,7 +121,7 @@ Making a fork or pull request does **not** give anyone permission to directly ch
 
 CardKeep is an early public Android release. Please report bugs or feature requests through [GitHub Issues](https://github.com/Madhan-Kurukondar/card-keep/issues).
 
-Current version: **v0.2.0**
+Current version: **v0.2.1**
 
 ### Current features
 
