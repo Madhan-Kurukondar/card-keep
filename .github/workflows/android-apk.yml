@@ -53,12 +53,12 @@ jobs:
             exit 1
           fi
           mkdir -p dist
-          cp app/build/outputs/apk/debug/app-debug.apk dist/CardKeep-Android-v0.1.1.apk
-          sha256sum dist/CardKeep-Android-v0.1.1.apk > dist/CardKeep-Android-v0.1.1.sha256
+          cp app/build/outputs/apk/debug/app-debug.apk dist/CardKeep-Android-v0.2.0.apk
+          sha256sum dist/CardKeep-Android-v0.2.0.apk > dist/CardKeep-Android-v0.2.0.sha256
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CardKeep-Android-v0.1.1
+          name: CardKeep-Android-v0.2.0
           path: dist/
           if-no-files-found: error
