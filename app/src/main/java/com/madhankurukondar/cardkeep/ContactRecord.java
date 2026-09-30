@@ -13,7 +13,7 @@ public class ContactRecord {
     public String website = "";
     public String address = "";
 
-    public String event = "";
+    public String conferenceId = "";\n    public String event = "";
     public String metDate = "";
     public String location = "";
     public String howMet = "";
@@ -42,7 +42,7 @@ public class ContactRecord {
             o.put("mobile", mobile);
             o.put("website", website);
             o.put("address", address);
-            o.put("event", event);
+            o.put("conferenceId", conferenceId);\n            o.put("event", event);
             o.put("metDate", metDate);
             o.put("location", location);
             o.put("howMet", howMet);
@@ -72,7 +72,7 @@ public class ContactRecord {
         r.mobile = o.optString("mobile", "");
         r.website = o.optString("website", "");
         r.address = o.optString("address", "");
-        r.event = o.optString("event", "");
+        r.conferenceId = o.optString("conferenceId", "");\n        r.event = o.optString("event", "");
         r.metDate = o.optString("metDate", "");
         r.location = o.optString("location", "");
         r.howMet = o.optString("howMet", "");
