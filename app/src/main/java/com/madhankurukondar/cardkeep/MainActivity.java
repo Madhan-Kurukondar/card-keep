@@ -5,7 +5,11 @@ import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.RippleDrawable;
 import android.net.Uri;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -48,6 +52,19 @@ public class MainActivity extends Activity {
     private static final int REQ_EXPORT_VCARD = 102;
     private static final int REQ_CAMERA_PERMISSION = 103;
 
+    // ArivEmb visual system — presentation only.
+    private static final int SILICON = Color.rgb(7, 10, 18);
+    private static final int NAVY = Color.rgb(11, 18, 32);
+    private static final int PANEL = Color.rgb(18, 27, 43);
+    private static final int PANEL_2 = Color.rgb(22, 31, 49);
+    private static final int MAGENTA = Color.rgb(216, 63, 181);
+    private static final int MAGENTA_LIGHT = Color.rgb(240, 123, 213);
+    private static final int MAGENTA_DEEP = Color.rgb(155, 27, 120);
+    private static final int WHITE = Color.rgb(245, 247, 250);
+    private static final int GREY = Color.rgb(168, 178, 193);
+    private static final int CIRCUIT = Color.rgb(41, 52, 73);
+    private static final int CYAN = Color.rgb(38, 198, 218);
+
     private final List<ContactRecord> contacts = new ArrayList<>();
     private final Map<String, EditText> editorFields = new LinkedHashMap<>();
 
@@ -60,6 +77,8 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        getWindow().setStatusBarColor(SILICON);
+        getWindow().setNavigationBarColor(SILICON);
         contacts.addAll(ContactStore.load(this));
         showHome();
     }
@@ -78,45 +97,76 @@ public class MainActivity extends Activity {
         editorFields.clear();
 
         ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setBackgroundColor(SILICON);
+
         LinearLayout root = column();
-        root.setPadding(dp(18), dp(18), dp(18), dp(32));
+        root.setPadding(dp(18), dp(20), dp(18), dp(36));
+        root.setBackgroundColor(SILICON);
         scroll.addView(root);
 
+        // Brand header
         LinearLayout brand = new LinearLayout(this);
         brand.setOrientation(LinearLayout.HORIZONTAL);
         brand.setGravity(Gravity.CENTER_VERTICAL);
+        brand.setPadding(dp(2), dp(2), dp(2), dp(12));
 
         ImageView brandMark = new ImageView(this);
         brandMark.setImageResource(com.madhankurukondar.cardkeep.R.drawable.arivemb_mark);
-        LinearLayout.LayoutParams markLp = new LinearLayout.LayoutParams(dp(44), dp(44));
-        markLp.setMargins(0, 0, dp(10), 0);
+        LinearLayout.LayoutParams markLp = new LinearLayout.LayoutParams(dp(52), dp(52));
+        markLp.setMargins(0, 0, dp(12), 0);
         brand.addView(brandMark, markLp);
 
         LinearLayout brandText = column();
+        TextView eyebrow = monoLabel("ARIVEMB · OPEN SOURCE");
+        brandText.addView(eyebrow);
         TextView title = heading("CardKeep");
-        title.setTextSize(28);
+        title.setTextSize(30);
         brandText.addView(title);
-        TextView byline = smallText("Open-source utility by ArivEmb");
-        brandText.addView(byline);
         brand.addView(brandText);
-
         root.addView(brand);
 
-        TextView intro = text("Private business-card capture. Scan a card, keep why the contact matters and what you discussed, then save it to your phone contacts. No account, no ads, no CardKeep cloud.");
-        intro.setPadding(0, dp(10), 0, dp(16));
-        root.addView(intro);
+        // Hero card
+        LinearLayout hero = column();
+        hero.setPadding(dp(18), dp(18), dp(18), dp(18));
+        hero.setBackground(roundedBackground(NAVY, CIRCUIT, 20));
 
-        root.addView(primaryButton("Scan business card", v -> startCamera()));
-        root.addView(secondaryButton("Import card image", v -> startGallery()));
-        root.addView(secondaryButton("Add contact manually", v -> {
+        TextView heroKicker = monoLabel("PRIVATE CONTACT CAPTURE");
+        hero.addView(heroKicker);
+
+        TextView heroTitle = heading("Scan. Remember. Follow up.");
+        heroTitle.setTextSize(27);
+        heroTitle.setPadding(0, dp(8), 0, dp(8));
+        hero.addView(heroTitle);
+
+        TextView intro = text("Turn a business card into a useful contact — including where you met, what you discussed, and what needs to happen next.");
+        intro.setPadding(0, 0, 0, dp(14));
+        hero.addView(intro);
+
+        LinearLayout proof = new LinearLayout(this);
+        proof.setOrientation(LinearLayout.HORIZONTAL);
+        proof.addView(chip("◆ OFFLINE OCR"));
+        proof.addView(chip("◆ NO ADS"));
+        proof.addView(chip("◆ NO CLOUD"));
+        hero.addView(proof);
+
+        LinearLayout.LayoutParams heroLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        heroLp.setMargins(0, 0, 0, dp(14));
+        root.addView(hero, heroLp);
+
+        root.addView(primaryButton("▣  SCAN BUSINESS CARD", v -> startCamera()));
+        root.addView(secondaryButton("⌁  IMPORT CARD IMAGE", v -> startGallery()));
+        root.addView(secondaryButton("＋  ADD CONTACT MANUALLY", v -> {
             ContactRecord r = new ContactRecord();
             r.metDate = today();
             showEditor(r);
         }));
 
-        section(root, "Contacts");
+        section(root, "CONTACTS · " + contacts.size());
 
-        searchBox = edit("Search name, company, event, tag…", "", false);
+        searchBox = edit("⌕  Search name, company, event, tag…", "", false);
         root.addView(searchBox);
         searchBox.addTextChangedListener(new SimpleTextWatcher() {
             @Override public void afterTextChanged(Editable s) {
@@ -129,8 +179,14 @@ public class MainActivity extends Activity {
         root.addView(contactListContainer);
         renderContactList("");
 
+        TextView footer = monoLabel("CARDKEEP · BUILT BY ARIVEMB");
+        footer.setGravity(Gravity.CENTER);
+        footer.setPadding(0, dp(28), 0, 0);
+        root.addView(footer);
+
         setContentView(scroll);
     }
+
 
     private void renderContactList(String query) {
         if (contactListContainer == null) return;
@@ -145,21 +201,54 @@ public class MainActivity extends Activity {
                     safe(r.opportunity), safe(r.nextAction)).toLowerCase(Locale.ROOT);
             if (!q.isEmpty() && !haystack.contains(q)) continue;
 
-            LinearLayout card = column();
-            card.setPadding(dp(14), dp(12), dp(14), dp(12));
-            card.setBackgroundColor(0xfff3f5f7);
+            LinearLayout card = new LinearLayout(this);
+            card.setOrientation(LinearLayout.HORIZONTAL);
+            card.setBackground(rippleBackground(PANEL, CIRCUIT, 16, 0x33D83FB5));
+            card.setClickable(true);
+            card.setFocusable(true);
+            card.setElevation(dp(2));
+
+            View accent = new View(this);
+            accent.setBackground(roundedBackground(MAGENTA, MAGENTA, 3));
+            LinearLayout.LayoutParams accentLp = new LinearLayout.LayoutParams(dp(4), LinearLayout.LayoutParams.MATCH_PARENT);
+            accentLp.setMargins(0, dp(10), dp(12), dp(10));
+            card.addView(accent, accentLp);
+
+            LinearLayout content = column();
+            content.setPadding(0, dp(13), dp(14), dp(13));
 
             TextView name = heading(r.name.isEmpty() ? "Unnamed contact" : r.name);
             name.setTextSize(18);
-            card.addView(name);
+            content.addView(name);
 
             String role = joinNonBlank(" · ", r.title, r.company);
-            if (!role.isEmpty()) card.addView(text(role));
-            if (!r.event.isEmpty()) card.addView(smallText("Met at: " + r.event));
-            if (!r.nextAction.isEmpty()) card.addView(smallText("Next: " + r.nextAction));
-            if (!r.followUp.isEmpty()) card.addView(smallText("Follow-up: " + r.followUp));
+            if (!role.isEmpty()) {
+                TextView roleView = smallText(role);
+                roleView.setTextColor(GREY);
+                roleView.setPadding(0, dp(2), 0, dp(6));
+                content.addView(roleView);
+            }
 
-            card.setClickable(true);
+            if (!r.event.isEmpty()) {
+                TextView event = monoLabel("◆ " + r.event);
+                event.setTextSize(11);
+                content.addView(event);
+            }
+            if (!r.nextAction.isEmpty()) {
+                TextView next = smallText("→ " + r.nextAction);
+                next.setTextColor(WHITE);
+                next.setPadding(0, dp(7), 0, 0);
+                content.addView(next);
+            }
+            if (!r.followUp.isEmpty()) {
+                TextView follow = smallText("⌁ Follow-up  " + r.followUp);
+                follow.setTextColor(CYAN);
+                follow.setPadding(0, dp(3), 0, 0);
+                content.addView(follow);
+            }
+
+            card.addView(content, new LinearLayout.LayoutParams(
+                    0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f));
             card.setOnClickListener(v -> showEditor(r));
 
             LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
@@ -171,13 +260,18 @@ public class MainActivity extends Activity {
         }
 
         if (shown == 0) {
+            LinearLayout emptyCard = column();
+            emptyCard.setPadding(dp(18), dp(20), dp(18), dp(20));
+            emptyCard.setBackground(roundedBackground(PANEL, CIRCUIT, 16));
             TextView empty = text(contacts.isEmpty()
                     ? "No contacts yet. Scan your first business card."
                     : "No matching contacts.");
-            empty.setPadding(0, dp(14), 0, 0);
-            contactListContainer.addView(empty);
+            empty.setGravity(Gravity.CENTER);
+            emptyCard.addView(empty);
+            contactListContainer.addView(emptyCard);
         }
     }
+
 
     private void showEditor(ContactRecord record) {
         editingRecord = record;
@@ -185,19 +279,33 @@ public class MainActivity extends Activity {
         editorFields.clear();
 
         ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.setBackgroundColor(SILICON);
+
         LinearLayout root = column();
-        root.setPadding(dp(18), dp(14), dp(18), dp(32));
+        root.setPadding(dp(18), dp(16), dp(18), dp(36));
+        root.setBackgroundColor(SILICON);
         scroll.addView(root);
 
-        Button back = secondaryButton("← Back", v -> showHome());
+        Button back = ghostButton("←  BACK", v -> showHome());
+        LinearLayout.LayoutParams backLp = new LinearLayout.LayoutParams(dp(112), dp(46));
+        backLp.setMargins(0, 0, 0, dp(12));
+        back.setLayoutParams(backLp);
         root.addView(back);
 
+        TextView kicker = monoLabel("CARDKEEP · CONTACT REVIEW");
+        root.addView(kicker);
+
         TextView title = heading("Review contact");
-        title.setTextSize(26);
-        title.setPadding(0, dp(8), 0, dp(8));
+        title.setTextSize(28);
+        title.setPadding(0, dp(5), 0, dp(3));
         root.addView(title);
 
-        section(root, "Contact");
+        TextView helper = smallText("OCR fields are editable. Keep only what is useful.");
+        helper.setPadding(0, 0, 0, dp(8));
+        root.addView(helper);
+
+        section(root, "01 · CONTACT");
         addField(root, "name", "Name", record.name, false);
         addField(root, "company", "Company", record.company, false);
         addField(root, "title", "Position / title", record.title, false);
@@ -207,7 +315,7 @@ public class MainActivity extends Activity {
         addField(root, "website", "Website", record.website, false, InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_URI);
         addField(root, "address", "Address", record.address, true);
 
-        section(root, "Meeting context");
+        section(root, "02 · MEETING CONTEXT");
         addField(root, "event", "Event / where we met", record.event, false);
         addField(root, "metDate", "Date met (YYYY-MM-DD)", record.metDate, false);
         addField(root, "location", "Location", record.location, false);
@@ -216,50 +324,68 @@ public class MainActivity extends Activity {
         addField(root, "discussion", "What we discussed", record.discussion, true);
         addField(root, "opportunity", "Opportunity / use case", record.opportunity, true);
 
-        section(root, "Follow-up");
+        section(root, "03 · FOLLOW-UP");
         addField(root, "nextAction", "Next action", record.nextAction, true);
         addField(root, "followUp", "Follow-up date", record.followUp, false);
-        addField(root, "status", "Status (New / Follow-up / Opportunity / Customer)", record.status, false);
-        addField(root, "priority", "Priority (Low / Normal / High)", record.priority, false);
-        addField(root, "tags", "Tags (comma separated)", record.tags, false);
+        addField(root, "status", "Status · New / Follow-up / Opportunity / Customer", record.status, false);
+        addField(root, "priority", "Priority · Low / Normal / High", record.priority, false);
+        addField(root, "tags", "Tags · comma separated", record.tags, false);
         addField(root, "notes", "General notes", record.notes, true);
 
         if (record.rawText != null && !record.rawText.isEmpty()) {
-            section(root, "Original OCR text");
+            section(root, "OCR SOURCE");
+            LinearLayout rawPanel = column();
+            rawPanel.setPadding(dp(14), dp(12), dp(14), dp(12));
+            rawPanel.setBackground(roundedBackground(NAVY, CIRCUIT, 14));
             TextView raw = smallText(record.rawText);
+            raw.setTextColor(GREY);
+            raw.setTypeface(Typeface.MONOSPACE);
             raw.setTextIsSelectable(true);
-            root.addView(raw);
+            rawPanel.addView(raw);
+            root.addView(rawPanel);
         }
 
+        LinearLayout privacyPanel = column();
+        privacyPanel.setPadding(dp(14), dp(12), dp(14), dp(12));
+        privacyPanel.setBackground(roundedBackground(0xff0D1C27, 0xff1A6270, 14));
+        TextView privacyLabel = monoLabel("◆ LOCAL-FIRST");
+        privacyLabel.setTextColor(CYAN);
+        privacyPanel.addView(privacyLabel);
         TextView privacy = smallText("CardKeep stores this record locally on this device. Saving to phone contacts opens Android's normal contact-save screen.");
-        privacy.setPadding(0, dp(16), 0, dp(8));
-        root.addView(privacy);
+        privacy.setTextColor(0xffC6CEDA);
+        privacy.setPadding(0, dp(5), 0, 0);
+        privacyPanel.addView(privacy);
+        LinearLayout.LayoutParams privacyLp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT);
+        privacyLp.setMargins(0, dp(18), 0, dp(10));
+        root.addView(privacyPanel, privacyLp);
 
-        root.addView(primaryButton("Save in CardKeep", v -> {
+        root.addView(primaryButton("✓  SAVE IN CARDKEEP", v -> {
             captureEditorIntoRecord();
             ContactStore.upsert(this, contacts, editingRecord);
             toast("Saved");
             showHome();
         }));
 
-        root.addView(secondaryButton("Save to phone contacts", v -> {
+        root.addView(secondaryButton("＋  SAVE TO PHONE CONTACTS", v -> {
             captureEditorIntoRecord();
             ContactStore.upsert(this, contacts, editingRecord);
             openNativeContactInsert(editingRecord);
         }));
 
-        root.addView(secondaryButton("Export vCard (.vcf)", v -> {
+        root.addView(secondaryButton("⇩  EXPORT VCARD (.VCF)", v -> {
             captureEditorIntoRecord();
             ContactStore.upsert(this, contacts, editingRecord);
             startVCardExport(editingRecord);
         }));
 
-        Button delete = secondaryButton("Delete CardKeep record", v -> deleteCurrentRecord());
-        delete.setTextColor(0xffa00000);
+        Button delete = dangerButton("×  DELETE RECORD", v -> deleteCurrentRecord());
         root.addView(delete);
 
         setContentView(scroll);
     }
+
 
     private void addField(LinearLayout root, String key, String hint, String value, boolean multiline) {
         addField(root, key, hint, value, multiline, InputType.TYPE_CLASS_TEXT);
@@ -574,9 +700,10 @@ public class MainActivity extends Activity {
     private TextView heading(String value) {
         TextView t = new TextView(this);
         t.setText(value);
-        t.setTextColor(0xff111111);
-        t.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        t.setTextColor(WHITE);
+        t.setTypeface(Typeface.create("sans-serif", Typeface.BOLD));
         t.setTextSize(20);
+        t.setLineSpacing(0, 1.06f);
         return t;
     }
 
@@ -584,57 +711,133 @@ public class MainActivity extends Activity {
         TextView t = new TextView(this);
         t.setText(value);
         t.setTextSize(16);
-        t.setTextColor(0xff222222);
+        t.setTextColor(0xffC6CEDA);
+        t.setLineSpacing(dp(2), 1.12f);
         return t;
     }
 
     private TextView smallText(String value) {
         TextView t = text(value);
         t.setTextSize(14);
-        t.setTextColor(0xff555555);
+        t.setTextColor(GREY);
+        return t;
+    }
+
+    private TextView monoLabel(String value) {
+        TextView t = new TextView(this);
+        t.setText(value);
+        t.setTextColor(MAGENTA_LIGHT);
+        t.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+        t.setTextSize(11);
+        t.setLetterSpacing(0.10f);
+        return t;
+    }
+
+    private TextView chip(String value) {
+        TextView t = monoLabel(value);
+        t.setTextSize(9);
+        t.setGravity(Gravity.CENTER);
+        t.setPadding(dp(8), dp(6), dp(8), dp(6));
+        t.setBackground(roundedBackground(PANEL_2, MAGENTA_DEEP, 999));
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f);
+        lp.setMargins(0, 0, dp(6), 0);
+        t.setLayoutParams(lp);
         return t;
     }
 
     private void section(LinearLayout root, String value) {
-        TextView t = heading(value);
-        t.setPadding(0, dp(20), 0, dp(6));
+        TextView t = monoLabel(value);
+        t.setTextSize(12);
+        t.setPadding(0, dp(24), 0, dp(8));
         root.addView(t);
     }
 
     private EditText edit(String hint, String value, boolean multiline) {
         EditText e = new EditText(this);
         e.setHint(hint);
+        e.setHintTextColor(0xff748196);
+        e.setTextColor(WHITE);
         e.setText(value == null ? "" : value);
         e.setTextSize(16);
         e.setSingleLine(!multiline);
+        e.setPadding(dp(14), dp(12), dp(14), dp(12));
+        e.setBackground(roundedBackground(PANEL_2, CIRCUIT, 13));
         if (multiline) {
             e.setMinLines(3);
             e.setGravity(Gravity.TOP | Gravity.START);
+        } else {
+            e.setMinHeight(dp(52));
         }
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp.setMargins(0, 0, 0, dp(8));
+        lp.setMargins(0, 0, 0, dp(9));
         e.setLayoutParams(lp);
         return e;
     }
 
     private Button primaryButton(String label, View.OnClickListener listener) {
-        Button b = new Button(this);
-        b.setText(label);
-        b.setAllCaps(false);
-        b.setTextSize(16);
-        b.setOnClickListener(listener);
-        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                LinearLayout.LayoutParams.WRAP_CONTENT);
-        lp.setMargins(0, dp(4), 0, dp(4));
-        b.setLayoutParams(lp);
+        Button b = baseButton(label, listener);
+        b.setTextColor(Color.WHITE);
+        b.setBackground(rippleBackground(MAGENTA, MAGENTA, 14, 0x44FFFFFF));
+        b.setElevation(dp(4));
         return b;
     }
 
     private Button secondaryButton(String label, View.OnClickListener listener) {
-        return primaryButton(label, listener);
+        Button b = baseButton(label, listener);
+        b.setTextColor(WHITE);
+        b.setBackground(rippleBackground(PANEL, CIRCUIT, 14, 0x33D83FB5));
+        return b;
+    }
+
+    private Button ghostButton(String label, View.OnClickListener listener) {
+        Button b = baseButton(label, listener);
+        b.setTextColor(MAGENTA_LIGHT);
+        b.setTextSize(12);
+        b.setTypeface(Typeface.MONOSPACE, Typeface.BOLD);
+        b.setBackground(rippleBackground(SILICON, CIRCUIT, 12, 0x33D83FB5));
+        return b;
+    }
+
+    private Button dangerButton(String label, View.OnClickListener listener) {
+        Button b = baseButton(label, listener);
+        b.setTextColor(0xffFF9AA8);
+        b.setBackground(rippleBackground(0xff201218, 0xff682B3A, 14, 0x33FF667D));
+        return b;
+    }
+
+    private Button baseButton(String label, View.OnClickListener listener) {
+        Button b = new Button(this);
+        b.setText(label);
+        b.setAllCaps(false);
+        b.setTextSize(14);
+        b.setTypeface(Typeface.create("sans-serif-medium", Typeface.BOLD));
+        b.setLetterSpacing(0.04f);
+        b.setGravity(Gravity.CENTER);
+        b.setMinHeight(dp(54));
+        b.setPadding(dp(16), dp(10), dp(16), dp(10));
+        b.setOnClickListener(listener);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                dp(54));
+        lp.setMargins(0, dp(5), 0, dp(5));
+        b.setLayoutParams(lp);
+        return b;
+    }
+
+    private GradientDrawable roundedBackground(int fill, int stroke, float radiusDp) {
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(fill);
+        bg.setCornerRadius(dp(Math.round(radiusDp)));
+        bg.setStroke(dp(1), stroke);
+        return bg;
+    }
+
+    private RippleDrawable rippleBackground(int fill, int stroke, float radiusDp, int rippleColor) {
+        GradientDrawable content = roundedBackground(fill, stroke, radiusDp);
+        return new RippleDrawable(ColorStateList.valueOf(rippleColor), content, null);
     }
 
     private int dp(int value) {

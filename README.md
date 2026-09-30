@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/Madhan-Kurukondar/card-keep/releases/latest/download/CardKeep-Android-v0.1.1.apk"><strong>Download CardKeep for Android</strong></a>
+  <a href="https://github.com/Madhan-Kurukondar/card-keep/releases/latest/download/CardKeep-Android-v0.1.2.apk"><strong>Download CardKeep for Android</strong></a>
 </p>
 
 ---
@@ -41,7 +41,7 @@ You do **not** need to know GitHub or programming.
 
 Tap:
 
-### [Download CardKeep-Android-v0.1.1.apk](https://github.com/Madhan-Kurukondar/card-keep/releases/latest/download/CardKeep-Android-v0.1.1.apk)
+### [Download CardKeep-Android-v0.1.2.apk](https://github.com/Madhan-Kurukondar/card-keep/releases/latest/download/CardKeep-Android-v0.1.2.apk)
 
 If the direct link does not work, open the [latest CardKeep release](https://github.com/Madhan-Kurukondar/card-keep/releases/latest) and download the file ending in **.apk**.
 
@@ -49,7 +49,7 @@ If the direct link does not work, open the [latest CardKeep release](https://git
 
 On your phone, open **Downloads** or your browser's downloaded files and tap:
 
-`CardKeep-Android-v0.1.1.apk`
+`CardKeep-Android-v0.1.2.apk`
 
 ### 3. Allow installation if Android asks
 
@@ -104,7 +104,7 @@ Making a fork or pull request does **not** give anyone permission to directly ch
 
 CardKeep is an early public Android release. Please report bugs or feature requests through [GitHub Issues](https://github.com/Madhan-Kurukondar/card-keep/issues).
 
-Current version: **v0.1.1**
+Current version: **v0.1.2**
 
 ### Current features
 
@@ -117,7 +117,7 @@ Current version: **v0.1.1**
 - contact search
 - native Android contact creation
 - vCard export
-- ArivEmb branding
+- ArivEmb branded dark UI and app identity
 - offline operation
 
 ## Planned

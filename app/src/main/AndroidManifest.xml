@@ -23,7 +23,7 @@
         android:label="CardKeep"
         android:supportsRtl="true"
         android:usesCleartextTraffic="false"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar">
+        android:theme="@style/Theme.CardKeep">
         <activity
             android:name=".MainActivity"
             android:exported="true">
