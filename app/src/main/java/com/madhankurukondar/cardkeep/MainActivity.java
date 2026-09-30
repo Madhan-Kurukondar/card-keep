@@ -1,11 +1,13 @@
 package com.madhankurukondar.cardkeep;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.provider.MediaStore;
@@ -43,6 +45,7 @@ public class MainActivity extends Activity {
     private static final int REQ_CAMERA = 100;
     private static final int REQ_GALLERY = 101;
     private static final int REQ_EXPORT_VCARD = 102;
+    private static final int REQ_CAMERA_PERMISSION = 103;
 
     private final List<ContactRecord> contacts = new ArrayList<>();
     private final Map<String, EditText> editorFields = new LinkedHashMap<>();
@@ -301,6 +304,14 @@ public class MainActivity extends Activity {
     }
 
     private void startCamera() {
+        if (checkSelfPermission(Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{Manifest.permission.CAMERA}, REQ_CAMERA_PERMISSION);
+            return;
+        }
+        launchCamera();
+    }
+
+    private void launchCamera() {
         try {
             ContentValues values = new ContentValues();
             values.put(MediaStore.Images.Media.DISPLAY_NAME, "cardkeep_" + System.currentTimeMillis() + ".jpg");
@@ -323,6 +334,18 @@ public class MainActivity extends Activity {
             startActivityForResult(intent, REQ_CAMERA);
         } catch (Exception e) {
             toast("Could not open camera: " + safeMessage(e));
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQ_CAMERA_PERMISSION) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                launchCamera();
+            } else {
+                toast("Camera permission is required to scan a business card. You can enable it in Android Settings > Apps > CardKeep > Permissions.");
+            }
         }
     }
 
