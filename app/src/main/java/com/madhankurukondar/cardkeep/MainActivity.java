@@ -62,7 +62,11 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        showHome();
+        if (editingRecord != null) {
+            showHome();
+        } else {
+            super.onBackPressed();
+        }
     }
 
     private void showHome() {
