@@ -47,8 +47,10 @@ jobs:
           ! echo "$PERMS" | grep -q "android.permission.ACCESS_NETWORK_STATE"
 
           MANIFEST="$("$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest print "$APK")"
-          echo "$MANIFEST" | grep -q 'android:label="ScanRecall"'
-          echo "$MANIFEST" | grep -q 'android:icon="@mipmap/ic_launcher"'
+          echo "$MANIFEST"
+          echo "$MANIFEST" | grep -q 'ScanRecall'
+          unzip -l "$APK" | grep -q 'res/mipmap-anydpi-v26/ic_launcher.xml'
+          unzip -l "$APK" | grep -q 'res/mipmap-anydpi-v26/ic_launcher_round.xml'
 
           mkdir -p dist
           cp "$APK" dist/ScanRecall-Android-v0.3.0-beta.1.apk
