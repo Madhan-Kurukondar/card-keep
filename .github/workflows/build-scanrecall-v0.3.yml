@@ -1,0 +1,63 @@
+name: Build ScanRecall v0.3 beta
+
+on:
+  push:
+    branches: [ scanrecall-v0.3 ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.13
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Install Android SDK 36
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Build beta APK
+        run: gradle --no-daemon :app:assembleDebug --stacktrace
+
+      - name: Verify APK
+        run: |
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK"
+
+          PERMS="$("$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest permissions "$APK")"
+          echo "$PERMS"
+          echo "$PERMS" | grep -q "android.permission.CAMERA"
+          ! echo "$PERMS" | grep -q "android.permission.INTERNET"
+          ! echo "$PERMS" | grep -q "android.permission.ACCESS_NETWORK_STATE"
+
+          MANIFEST="$("$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest print "$APK")"
+          echo "$MANIFEST" | grep -q 'android:label="ScanRecall"'
+          echo "$MANIFEST" | grep -q 'android:icon="@mipmap/ic_launcher"'
+
+          mkdir -p dist
+          cp "$APK" dist/ScanRecall-Android-v0.3.0-beta.1.apk
+          sha256sum dist/ScanRecall-Android-v0.3.0-beta.1.apk > dist/ScanRecall-Android-v0.3.0-beta.1.sha256
+          ls -lh dist/ScanRecall-Android-v0.3.0-beta.1.apk
+
+      - name: Upload beta artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScanRecall-Android-v0.3.0-beta.1
+          path: dist/
+          if-no-files-found: error
