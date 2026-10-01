@@ -6,7 +6,9 @@ import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.res.ColorStateList;
+import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.graphics.ImageDecoder;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.drawable.RippleDrawable;
@@ -995,39 +997,122 @@ public class MainActivity extends Activity {
         TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
         recognizer.process(image)
                 .addOnSuccessListener(result -> {
+                    String primaryText = result.getText();
                     recognizer.close();
-                    dialog.dismiss();
-                    if (deleteSourceAfter) safeDeleteUri(sourceUri);
-
-                    ContactRecord r = BusinessCardParser.parse(result.getText());
-                    QrPayloadParser.MergeResult qr = QrPayloadParser.mergeInto(r, qrValues);
-                    r.imagePath = privateCopy.getAbsolutePath();
-                    applyConferenceDefaults(r);
-                    if (r.metDate == null || r.metDate.isEmpty()) r.metDate = today();
-
-                    if (qr.codeCount > 0) {
-                        toast(qr.kind + " detected · visible badge/card text was also read.");
-                    }
-                    showEditor(r);
+                    runEnhancedOcr(primaryText, qrValues, privateCopy, sourceUri, deleteSourceAfter, dialog);
                 })
                 .addOnFailureListener(error -> {
                     recognizer.close();
-                    dialog.dismiss();
-                    if (deleteSourceAfter) safeDeleteUri(sourceUri);
-
-                    ContactRecord r = new ContactRecord();
-                    QrPayloadParser.MergeResult qr = QrPayloadParser.mergeInto(r, qrValues);
-                    r.imagePath = privateCopy.getAbsolutePath();
-                    applyConferenceDefaults(r);
-                    if (r.metDate == null || r.metDate.isEmpty()) r.metDate = today();
-
-                    if (qr.codeCount > 0) {
-                        toast(qr.kind + " detected. Visible text could not be read; review the QR-derived details.");
-                    } else {
-                        toast("ScanRecall could not read this image. You can enter the details manually.");
-                    }
-                    showEditor(r);
+                    runEnhancedOcr("", qrValues, privateCopy, sourceUri, deleteSourceAfter, dialog);
                 });
+    }
+
+    private void runEnhancedOcr(String primaryText,
+                                List<String> qrValues,
+                                File privateCopy,
+                                Uri sourceUri,
+                                boolean deleteSourceAfter,
+                                ProgressDialog dialog) {
+        final Bitmap enhanced;
+        try {
+            enhanced = createColorRobustOcrBitmap(sourceUri);
+        } catch (Exception e) {
+            finishOcr(primaryText, qrValues, privateCopy, sourceUri, deleteSourceAfter, dialog);
+            return;
+        }
+
+        TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+        InputImage enhancedImage = InputImage.fromBitmap(enhanced, 0);
+        recognizer.process(enhancedImage)
+                .addOnSuccessListener(result -> {
+                    recognizer.close();
+                    String secondaryText = result.getText();
+                    enhanced.recycle();
+                    finishOcr(mergeOcrText(primaryText, secondaryText),
+                            qrValues, privateCopy, sourceUri, deleteSourceAfter, dialog);
+                })
+                .addOnFailureListener(error -> {
+                    recognizer.close();
+                    enhanced.recycle();
+                    finishOcr(primaryText, qrValues, privateCopy, sourceUri, deleteSourceAfter, dialog);
+                });
+    }
+
+    private void finishOcr(String ocrText,
+                           List<String> qrValues,
+                           File privateCopy,
+                           Uri sourceUri,
+                           boolean deleteSourceAfter,
+                           ProgressDialog dialog) {
+        dialog.dismiss();
+        if (deleteSourceAfter) safeDeleteUri(sourceUri);
+
+        ContactRecord r = (ocrText == null || ocrText.trim().isEmpty())
+                ? new ContactRecord()
+                : BusinessCardParser.parse(ocrText);
+        QrPayloadParser.MergeResult qr = QrPayloadParser.mergeInto(r, qrValues);
+        r.imagePath = privateCopy.getAbsolutePath();
+        applyConferenceDefaults(r);
+        if (r.metDate == null || r.metDate.isEmpty()) r.metDate = today();
+
+        if (qr.codeCount > 0) {
+            if (ocrText == null || ocrText.trim().isEmpty()) {
+                toast(qr.kind + " detected. Visible text could not be read; review the QR-derived details.");
+            } else {
+                toast(qr.kind + " detected · visible badge/card text was also read.");
+            }
+        } else if (ocrText == null || ocrText.trim().isEmpty()) {
+            toast("ScanRecall could not read this image. You can enter the details manually.");
+        }
+        showEditor(r);
+    }
+
+    private Bitmap createColorRobustOcrBitmap(Uri sourceUri) throws Exception {
+        ImageDecoder.Source source = ImageDecoder.createSource(getContentResolver(), sourceUri);
+        Bitmap bitmap = ImageDecoder.decodeBitmap(source, (decoder, info, src) -> {
+            decoder.setAllocator(ImageDecoder.ALLOCATOR_SOFTWARE);
+            int width = info.getSize().getWidth();
+            int height = info.getSize().getHeight();
+            int max = Math.max(width, height);
+            final int targetMax = 2400;
+            if (max > targetMax) {
+                float scale = (float) targetMax / (float) max;
+                decoder.setTargetSize(
+                        Math.max(1, Math.round(width * scale)),
+                        Math.max(1, Math.round(height * scale)));
+            }
+        });
+
+        int width = bitmap.getWidth();
+        int height = bitmap.getHeight();
+        int[] pixels = new int[width * height];
+        bitmap.getPixels(pixels, 0, width, 0, 0, width, height);
+
+        for (int i = 0; i < pixels.length; i++) {
+            int p = pixels[i];
+            int alpha = Color.alpha(p);
+            int minChannel = Math.min(Color.red(p), Math.min(Color.green(p), Color.blue(p)));
+
+            // Using the darkest RGB channel makes red, blue and other coloured text
+            // substantially darker than white/light card stock. Contrast stretching
+            // then improves small punctuation such as hyphens in e-mail addresses.
+            int value = ((minChannel - 30) * 255) / 205;
+            value = Math.max(0, Math.min(255, value));
+            pixels[i] = Color.argb(alpha, value, value, value);
+        }
+
+        Bitmap enhanced = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        enhanced.setPixels(pixels, 0, width, 0, 0, width, height);
+        bitmap.recycle();
+        return enhanced;
+    }
+
+    private String mergeOcrText(String primary, String secondary) {
+        String a = primary == null ? "" : primary.trim();
+        String b = secondary == null ? "" : secondary.trim();
+        if (a.isEmpty()) return b;
+        if (b.isEmpty()) return a;
+        return a + "\n" + b;
     }
 
     private File copyToPrivateStorage(Uri sourceUri) throws Exception {
