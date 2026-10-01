@@ -7,7 +7,7 @@ android {
     compileSdk 36
 
     defaultConfig {
-        applicationId 'com.madhankurukondar.cardkeep'
+        applicationId 'com.madhankurukondar.scanrecall.beta'
         minSdk 29
         targetSdk 36
         ndk {
