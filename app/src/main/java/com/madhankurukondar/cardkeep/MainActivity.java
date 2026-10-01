@@ -28,6 +28,9 @@ import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.mlkit.vision.barcode.BarcodeScanner;
+import com.google.mlkit.vision.barcode.BarcodeScanning;
+import com.google.mlkit.vision.barcode.common.Barcode;
 import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.text.TextRecognition;
 import com.google.mlkit.vision.text.TextRecognizer;
@@ -119,15 +122,15 @@ public class MainActivity extends Activity {
         brand.setPadding(dp(2), dp(2), dp(2), dp(12));
 
         ImageView brandMark = new ImageView(this);
-        brandMark.setImageResource(com.madhankurukondar.cardkeep.R.drawable.arivemb_symbol);
+        brandMark.setImageResource(com.madhankurukondar.cardkeep.R.mipmap.ic_launcher);
         LinearLayout.LayoutParams markLp = new LinearLayout.LayoutParams(dp(52), dp(52));
         markLp.setMargins(0, 0, dp(12), 0);
         brand.addView(brandMark, markLp);
 
         LinearLayout brandText = column();
-        TextView eyebrow = monoLabel("ARIVEMB · OPEN SOURCE");
+        TextView eyebrow = monoLabel("SCANRECALL · BY ARIVEMB");
         brandText.addView(eyebrow);
-        TextView title = heading("CardKeep");
+        TextView title = heading("ScanRecall");
         title.setTextSize(30);
         brandText.addView(title);
         brand.addView(brandText);
@@ -146,14 +149,14 @@ public class MainActivity extends Activity {
         heroTitle.setPadding(0, dp(8), 0, dp(8));
         hero.addView(heroTitle);
 
-        TextView intro = text("Turn a business card into a useful contact — including where you met, what you discussed, and what needs to happen next.");
+        TextView intro = text("Scan a business card, event badge or contact QR. ScanRecall combines visible text, QR data and meeting context into one editable contact.");
         intro.setPadding(0, 0, 0, dp(14));
         hero.addView(intro);
 
         LinearLayout proof = new LinearLayout(this);
         proof.setOrientation(LinearLayout.HORIZONTAL);
         proof.addView(chip("◆ OFFLINE OCR"));
-        proof.addView(chip("◆ NO ADS"));
+        proof.addView(chip("◆ SMART QR"));
         proof.addView(chip("◆ NO CLOUD"));
         hero.addView(proof);
 
@@ -163,8 +166,8 @@ public class MainActivity extends Activity {
         heroLp.setMargins(0, 0, 0, dp(14));
         root.addView(hero, heroLp);
 
-        root.addView(primaryButton("▣  SCAN BUSINESS CARD", v -> startCamera()));
-        root.addView(secondaryButton("⌁  IMPORT CARD IMAGE", v -> startGallery()));
+        root.addView(primaryButton("▣  SCAN PERSON / CARD / BADGE", v -> startCamera()));
+        root.addView(secondaryButton("⌁  IMPORT IMAGE", v -> startGallery()));
         root.addView(secondaryButton("＋  ADD CONTACT MANUALLY", v -> {
             ContactRecord r = new ContactRecord();
             r.metDate = today();
@@ -201,7 +204,7 @@ public class MainActivity extends Activity {
         root.addView(contactListContainer);
         renderContactList("");
 
-        TextView footer = monoLabel("CARDKEEP · BUILT BY ARIVEMB");
+        TextView footer = monoLabel("SCANRECALL · BY ARIVEMB");
         footer.setGravity(Gravity.CENTER);
         footer.setPadding(0, dp(28), 0, 0);
         root.addView(footer);
@@ -315,7 +318,7 @@ public class MainActivity extends Activity {
         back.setLayoutParams(backLp);
         root.addView(back);
 
-        root.addView(monoLabel("CARDKEEP · CONFERENCE MODE"));
+        root.addView(monoLabel("SCANRECALL · CONFERENCE MODE"));
         TextView title = heading("Conferences");
         title.setTextSize(28);
         title.setPadding(0, dp(5), 0, dp(3));
@@ -444,8 +447,8 @@ public class MainActivity extends Activity {
         defaultLp.setMargins(0, dp(6), 0, dp(12));
         root.addView(defaults, defaultLp);
 
-        root.addView(primaryButton("▣  SCAN NEXT CARD", v -> startCamera()));
-        root.addView(secondaryButton("⌁  IMPORT CARD IMAGE", v -> startGallery()));
+        root.addView(primaryButton("▣  SCAN NEXT PERSON", v -> startCamera()));
+        root.addView(secondaryButton("⌁  IMPORT IMAGE", v -> startGallery()));
         root.addView(secondaryButton("＋  ADD CONTACT MANUALLY", v -> {
             ContactRecord r = new ContactRecord();
             applyConferenceDefaults(r);
@@ -544,7 +547,7 @@ public class MainActivity extends Activity {
         back.setLayoutParams(backLp);
         root.addView(back);
 
-        root.addView(monoLabel("CARDKEEP · CONFERENCE SETUP"));
+        root.addView(monoLabel("SCANRECALL · CONFERENCE SETUP"));
 
         TextView title = heading(findConference(conference.id) == null ? "Create conference" : "Edit conference");
         title.setTextSize(28);
@@ -684,7 +687,7 @@ public class MainActivity extends Activity {
         back.setLayoutParams(backLp);
         root.addView(back);
 
-        TextView kicker = monoLabel("CARDKEEP · CONTACT REVIEW");
+        TextView kicker = monoLabel("SCANRECALL · CONTACT REVIEW");
         root.addView(kicker);
 
         TextView title = heading("Review contact");
@@ -767,7 +770,7 @@ public class MainActivity extends Activity {
         TextView privacyLabel = monoLabel("◆ LOCAL-FIRST");
         privacyLabel.setTextColor(CYAN);
         privacyPanel.addView(privacyLabel);
-        TextView privacy = smallText("CardKeep stores this record locally on this device. Saving to phone contacts opens Android's normal contact-save screen.");
+        TextView privacy = smallText("ScanRecall stores this record locally on this device. Saving to phone contacts opens Android's normal contact-save screen.");
         privacy.setTextColor(0xffC6CEDA);
         privacy.setPadding(0, dp(5), 0, 0);
         privacyPanel.addView(privacy);
@@ -777,7 +780,7 @@ public class MainActivity extends Activity {
         privacyLp.setMargins(0, dp(18), 0, dp(10));
         root.addView(privacyPanel, privacyLp);
 
-        root.addView(primaryButton("✓  SAVE IN CARDKEEP", v -> {
+        root.addView(primaryButton("✓  SAVE IN SCANRECALL", v -> {
             captureEditorIntoRecord();
             ContactStore.upsert(this, contacts, editingRecord);
             toast("Saved");
@@ -879,7 +882,7 @@ public class MainActivity extends Activity {
             ContentValues values = new ContentValues();
             values.put(MediaStore.Images.Media.DISPLAY_NAME, "cardkeep_" + System.currentTimeMillis() + ".jpg");
             values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
-            values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/CardKeepTemp");
+            values.put(MediaStore.Images.Media.RELATIVE_PATH, "Pictures/ScanRecallTemp");
 
             pendingCameraUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
             if (pendingCameraUri == null) throw new IllegalStateException("Could not create image destination");
@@ -907,7 +910,7 @@ public class MainActivity extends Activity {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 launchCamera();
             } else {
-                toast("Camera permission is required to scan a business card. You can enable it in Android Settings > Apps > CardKeep > Permissions.");
+                toast("Camera permission is required for Smart Scan. You can enable it in Android Settings > Apps > ScanRecall > Permissions.");
             }
         }
     }
@@ -956,41 +959,75 @@ public class MainActivity extends Activity {
     }
 
     private void processCardImage(Uri sourceUri, boolean deleteSourceAfter) {
-        ProgressDialog dialog = ProgressDialog.show(this, "CardKeep", "Reading business card…", true, false);
+        ProgressDialog dialog = ProgressDialog.show(this, "ScanRecall", "Reading card, badge and QR…", true, false);
         try {
             File privateCopy = copyToPrivateStorage(sourceUri);
             InputImage image = InputImage.fromFilePath(this, sourceUri);
-            TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+            BarcodeScanner barcodeScanner = BarcodeScanning.getClient();
 
-            recognizer.process(image)
-                    .addOnSuccessListener(result -> {
-                        recognizer.close();
-                        dialog.dismiss();
-                        if (deleteSourceAfter) safeDeleteUri(sourceUri);
-
-                        ContactRecord r = BusinessCardParser.parse(result.getText());
-                        r.imagePath = privateCopy.getAbsolutePath();
-                        applyConferenceDefaults(r);
-                        if (r.metDate == null || r.metDate.isEmpty()) r.metDate = today();
-                        showEditor(r);
+            barcodeScanner.process(image)
+                    .addOnSuccessListener(barcodes -> {
+                        List<String> qrValues = new ArrayList<>();
+                        for (Barcode barcode : barcodes) {
+                            String raw = barcode.getRawValue();
+                            if (raw != null && !raw.trim().isEmpty()) qrValues.add(raw);
+                        }
+                        barcodeScanner.close();
+                        runOcrAndMerge(image, qrValues, privateCopy, sourceUri, deleteSourceAfter, dialog);
                     })
                     .addOnFailureListener(error -> {
-                        recognizer.close();
-                        dialog.dismiss();
-                        if (deleteSourceAfter) safeDeleteUri(sourceUri);
-
-                        ContactRecord r = new ContactRecord();
-                        r.imagePath = privateCopy.getAbsolutePath();
-                        applyConferenceDefaults(r);
-                        if (r.metDate == null || r.metDate.isEmpty()) r.metDate = today();
-                        toast("OCR could not read this card. You can enter the details manually.");
-                        showEditor(r);
+                        barcodeScanner.close();
+                        runOcrAndMerge(image, new ArrayList<>(), privateCopy, sourceUri, deleteSourceAfter, dialog);
                     });
         } catch (Exception e) {
             dialog.dismiss();
             if (deleteSourceAfter) safeDeleteUri(sourceUri);
             toast("Could not process image: " + safeMessage(e));
         }
+    }
+
+    private void runOcrAndMerge(InputImage image,
+                                List<String> qrValues,
+                                File privateCopy,
+                                Uri sourceUri,
+                                boolean deleteSourceAfter,
+                                ProgressDialog dialog) {
+        TextRecognizer recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS);
+        recognizer.process(image)
+                .addOnSuccessListener(result -> {
+                    recognizer.close();
+                    dialog.dismiss();
+                    if (deleteSourceAfter) safeDeleteUri(sourceUri);
+
+                    ContactRecord r = BusinessCardParser.parse(result.getText());
+                    QrPayloadParser.MergeResult qr = QrPayloadParser.mergeInto(r, qrValues);
+                    r.imagePath = privateCopy.getAbsolutePath();
+                    applyConferenceDefaults(r);
+                    if (r.metDate == null || r.metDate.isEmpty()) r.metDate = today();
+
+                    if (qr.codeCount > 0) {
+                        toast(qr.kind + " detected · visible badge/card text was also read.");
+                    }
+                    showEditor(r);
+                })
+                .addOnFailureListener(error -> {
+                    recognizer.close();
+                    dialog.dismiss();
+                    if (deleteSourceAfter) safeDeleteUri(sourceUri);
+
+                    ContactRecord r = new ContactRecord();
+                    QrPayloadParser.MergeResult qr = QrPayloadParser.mergeInto(r, qrValues);
+                    r.imagePath = privateCopy.getAbsolutePath();
+                    applyConferenceDefaults(r);
+                    if (r.metDate == null || r.metDate.isEmpty()) r.metDate = today();
+
+                    if (qr.codeCount > 0) {
+                        toast(qr.kind + " detected. Visible text could not be read; review the QR-derived details.");
+                    } else {
+                        toast("ScanRecall could not read this image. You can enter the details manually.");
+                    }
+                    showEditor(r);
+                });
     }
 
     private File copyToPrivateStorage(Uri sourceUri) throws Exception {
