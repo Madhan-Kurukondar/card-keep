@@ -85,11 +85,11 @@ ScanRecall is designed to work locally.
 
 The visible product name in v0.3 is **ScanRecall**.
 
-For upgrade compatibility during the beta, the Android application ID remains:
+For safe testing, the v0.3 beta uses a separate Android application ID:
 
-`com.madhankurukondar.cardkeep`
+`com.madhankurukondar.scanrecall.beta`
 
-This is deliberate so a future approved ScanRecall release can upgrade the existing installation instead of becoming an unrelated second app.
+This allows **ScanRecall Beta and the working CardKeep v0.2.1 app to remain installed side-by-side**. The stable app and its local records are not replaced by the beta. A permanent application/signing identity will be decided before the production ScanRecall release.
 
 ## Product identity
 
