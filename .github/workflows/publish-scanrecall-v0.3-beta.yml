@@ -1,0 +1,127 @@
+name: Publish ScanRecall v0.3 beta
+
+on:
+  push:
+    branches: [ scanrecall-v0.3 ]
+    paths:
+      - ".github/workflows/publish-scanrecall-v0.3-beta.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.13
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Install Android SDK 36
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Build canonical beta APK
+        run: gradle --no-daemon :app:assembleDebug --stacktrace
+
+      - name: Verify and package
+        run: |
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK"
+
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK"
+
+          PERMS="$("$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest permissions "$APK")"
+          echo "$PERMS"
+          echo "$PERMS" | grep -q "android.permission.CAMERA"
+          ! echo "$PERMS" | grep -q "android.permission.INTERNET"
+          ! echo "$PERMS" | grep -q "android.permission.ACCESS_NETWORK_STATE"
+
+          MANIFEST="$("$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest print "$APK")"
+          echo "$MANIFEST"
+          echo "$MANIFEST" | grep -q 'package="com.madhankurukondar.scanrecall.beta"'
+          echo "$MANIFEST" | grep -q 'android:label="ScanRecall Beta"'
+
+          unzip -l "$APK" | grep -q 'res/mipmap-anydpi-v26/ic_launcher.xml'
+          unzip -l "$APK" | grep -q 'res/mipmap-anydpi-v26/ic_launcher_round.xml'
+
+          mkdir -p dist
+          cp "$APK" dist/ScanRecall-Android-v0.3.0-beta.1.apk
+          sha256sum dist/ScanRecall-Android-v0.3.0-beta.1.apk > dist/ScanRecall-Android-v0.3.0-beta.1.sha256
+          ls -lh dist/ScanRecall-Android-v0.3.0-beta.1.apk
+
+      - name: Upload canonical beta artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScanRecall-Android-v0.3.0-beta.1
+          path: dist/
+          if-no-files-found: error
+
+      - name: Create ScanRecall beta pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cat > RELEASE_NOTES.md <<'EOF'
+          # ScanRecall Android v0.3.0-beta.1
+
+          This is a **pre-release beta**. CardKeep v0.2.1 remains the stable release.
+
+          ## Safe side-by-side testing
+          ScanRecall Beta uses a separate Android application ID:
+          `com.madhankurukondar.scanrecall.beta`
+
+          It can therefore remain installed alongside the working CardKeep v0.2.1 app without replacing its local records.
+
+          ## ScanRecall identity
+          - renamed product identity: ScanRecall
+          - dedicated ScanRecall adaptive Android launcher icon
+          - ArivEmb visual palette
+          - "by ArivEmb" product attribution
+
+          ## Smart Scan
+          One captured image is processed for both visible text and QR/barcode data.
+
+          - business-card OCR
+          - event-badge OCR
+          - vCard QR parsing
+          - MECARD QR parsing
+          - email and telephone QR parsing
+          - LinkedIn / profile / website QR retention
+          - opaque event badge QR/token retention as context
+          - Conference Mode context applied to the resulting contact
+
+          ScanRecall does not attempt to bypass proprietary event-platform QR access controls.
+
+          ## Privacy
+          - OCR runs on device
+          - barcode/QR recognition uses the bundled ML Kit model
+          - no Internet permission
+          - no advertising
+          - no ScanRecall cloud backend
+
+          ## Existing core retained
+          - local contact/context storage
+          - editable OCR result
+          - Conference Mode
+          - Android native contact creation
+          - vCard export
+          EOF
+
+          if gh release view v0.3.0-beta.1 >/dev/null 2>&1; then
+            gh release upload v0.3.0-beta.1               dist/ScanRecall-Android-v0.3.0-beta.1.apk               dist/ScanRecall-Android-v0.3.0-beta.1.sha256               --clobber
+            gh release edit v0.3.0-beta.1               --target "$GITHUB_SHA"               --title "ScanRecall Android v0.3.0-beta.1"               --notes-file RELEASE_NOTES.md               --prerelease
+          else
+            gh release create v0.3.0-beta.1               dist/ScanRecall-Android-v0.3.0-beta.1.apk               dist/ScanRecall-Android-v0.3.0-beta.1.sha256               --target "$GITHUB_SHA"               --title "ScanRecall Android v0.3.0-beta.1"               --notes-file RELEASE_NOTES.md               --prerelease
+          fi
