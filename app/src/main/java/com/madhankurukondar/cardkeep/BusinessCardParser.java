@@ -16,13 +16,22 @@ public final class BusinessCardParser {
     private static final String[] TITLE_WORDS = {
             "director", "manager", "engineer", "president", "founder", "owner",
             "ceo", "cto", "cfo", "coo", "vice president", "vp", "head", "lead",
-            "sales", "business development", "architect", "consultant", "specialist"
+            "sales", "business development", "architect", "consultant", "specialist",
+            "marketing", "applications", "application", "product", "technical"
     };
 
     private static final String[] COMPANY_WORDS = {
             "gmbh", " ag", "inc", "llc", "ltd", "limited", "corp", "corporation",
-            "technologies", "technology", "systems", "solutions", "semiconductor",
-            "group", "s.a.", "s.r.l", " oy", " ab"
+            "incorporated", "technologies", "technology", "systems", "solutions",
+            "semiconductor", "group", "s.a.", "s.r.l", " oy", " ab"
+    };
+
+    private static final String[] NON_NAME_WORDS = {
+            "embedded", "processor", "processors", "software", "hardware", "product",
+            "marketing", "technical", "applications", "application", "engineering",
+            "sales", "business", "development", "department", "division", "team",
+            "systems", "solutions", "technologies", "technology", "semiconductor",
+            "incorporated", "corporation", "company", "canada", "usa"
     };
 
     private BusinessCardParser() {}
@@ -31,9 +40,10 @@ public final class BusinessCardParser {
         ContactRecord r = new ContactRecord();
         r.rawText = raw == null ? "" : raw;
 
-        List<String> lines = cleanLines(r.rawText);
-        List<String> emails = matches(EMAIL, r.rawText);
-        List<String> urls = matches(URL, r.rawText);
+        String normalizedRaw = normalizeOcrPunctuation(r.rawText);
+        List<String> lines = cleanLines(normalizedRaw);
+        List<String> emails = extractEmails(lines, normalizedRaw);
+        List<String> urls = matches(URL, normalizedRaw);
         urls.removeIf(s -> s.contains("@"));
 
         List<String> phoneLines = new ArrayList<>();
@@ -48,23 +58,16 @@ public final class BusinessCardParser {
 
         List<String> textLines = new ArrayList<>();
         for (String line : lines) {
-            if (!EMAIL.matcher(line).find() && !URL.matcher(line).find() && !PHONE.matcher(line).find()) {
+            if (!containsEmail(line) && !URL.matcher(line).find() && !PHONE.matcher(line).find()) {
                 textLines.add(line);
             }
         }
 
         r.company = firstMatching(textLines, BusinessCardParser::looksLikeCompany);
         r.title = firstMatching(textLines, BusinessCardParser::looksLikeTitle);
+        r.name = bestNameCandidate(textLines, r.company, r.title, emails);
 
-        for (String line : textLines) {
-            if (line.equals(r.company) || line.equals(r.title)) continue;
-            if (looksLikeName(line)) {
-                r.name = line;
-                break;
-            }
-        }
-
-        r.email = emails.isEmpty() ? "" : emails.get(0);
+        r.email = emails.isEmpty() ? "" : trimPunctuation(emails.get(0));
         r.website = urls.isEmpty() ? "" : trimPunctuation(urls.get(0));
 
         int mobileIndex = -1;
@@ -108,7 +111,8 @@ public final class BusinessCardParser {
     private static boolean looksLikeCompany(String line) {
         String lower = " " + line.toLowerCase(Locale.ROOT) + " ";
         for (String word : COMPANY_WORDS) if (lower.contains(word)) return true;
-        return line.length() >= 3 && line.length() <= 36 && line.equals(line.toUpperCase(Locale.ROOT)) && containsLetter(line);
+        return line.length() >= 2 && line.length() <= 36
+                && line.equals(line.toUpperCase(Locale.ROOT)) && containsLetter(line);
     }
 
     private static boolean looksLikeTitle(String line) {
@@ -117,10 +121,123 @@ public final class BusinessCardParser {
         return false;
     }
 
-    private static boolean looksLikeName(String line) {
-        if (containsDigit(line) || line.length() > 60) return false;
-        String[] words = line.replace("|", " ").replace("•", " ").trim().split("\\s+");
-        return words.length >= 2 && words.length <= 5 && containsLetter(line);
+    private static String bestNameCandidate(List<String> lines,
+                                            String company,
+                                            String title,
+                                            List<String> emails) {
+        String best = "";
+        int bestScore = Integer.MIN_VALUE;
+
+        for (int i = 0; i < lines.size(); i++) {
+            String line = lines.get(i);
+            if (line.equals(company) || line.equals(title)) continue;
+
+            int score = nameScore(line, i, emails);
+            if (score > bestScore) {
+                bestScore = score;
+                best = line;
+            }
+        }
+        return bestScore >= 4 ? best : "";
+    }
+
+    private static int nameScore(String line, int lineIndex, List<String> emails) {
+        if (line == null || line.isEmpty() || containsDigit(line) || line.length() > 60) {
+            return Integer.MIN_VALUE;
+        }
+        if (looksLikeTitle(line) || looksLikeCompany(line)) return Integer.MIN_VALUE;
+        if (line.contains("@") || line.contains("://")) return Integer.MIN_VALUE;
+
+        String cleaned = line.replace("|", " ").replace("•", " ").trim();
+        String[] words = cleaned.split("\\s+");
+        if (words.length < 2 || words.length > 5) return Integer.MIN_VALUE;
+
+        String lower = cleaned.toLowerCase(Locale.ROOT);
+        for (String word : NON_NAME_WORDS) {
+            if (containsWord(lower, word)) return -10;
+        }
+        if (lower.matches(".*\\b(street|strasse|straße|road|avenue|ave|boulevard|blvd|lane|drive|ottawa|dallas)\\b.*")) {
+            return -10;
+        }
+
+        int score = 4;
+        if (words.length == 2 || words.length == 3) score += 2;
+        if (lineIndex == 0) score += 3;
+        else if (lineIndex <= 2) score += 2;
+        else if (lineIndex <= 4) score += 1;
+
+        int nameLikeWords = 0;
+        for (String word : words) {
+            String token = word.replaceAll("^[^\\p{L}]+|[^\\p{L}'’-]+$", "");
+            if (token.isEmpty()) continue;
+            if (Character.isUpperCase(token.codePointAt(0)) || token.equals(token.toUpperCase(Locale.ROOT))) {
+                nameLikeWords++;
+            }
+        }
+        if (nameLikeWords == words.length) score += 2;
+        else if (nameLikeWords >= Math.max(1, words.length - 1)) score += 1;
+
+        if (line.contains(",") || line.contains(":")) score -= 3;
+
+        String surname = normalizeLetters(words[words.length - 1]);
+        if (!surname.isEmpty()) {
+            for (String email : emails) {
+                int at = email.indexOf('@');
+                if (at <= 0) continue;
+                String local = normalizeLetters(email.substring(0, at));
+                if (local.contains(surname)) {
+                    score += 4;
+                    break;
+                }
+            }
+        }
+
+        return score;
+    }
+
+    private static boolean containsWord(String lowerLine, String lowerWord) {
+        String[] tokens = lowerLine.split("[^\\p{L}]+");
+        for (String token : tokens) {
+            if (token.equals(lowerWord)) return true;
+        }
+        return false;
+    }
+
+    private static String normalizeLetters(String value) {
+        return value == null ? "" : value.toLowerCase(Locale.ROOT).replaceAll("[^\\p{L}\\p{N}]", "");
+    }
+
+    private static String normalizeOcrPunctuation(String raw) {
+        return raw
+                .replace('\u2010', '-')
+                .replace('\u2011', '-')
+                .replace('\u2012', '-')
+                .replace('\u2013', '-')
+                .replace('\u2014', '-')
+                .replace('\u2212', '-');
+    }
+
+    private static List<String> extractEmails(List<String> lines, String raw) {
+        Set<String> unique = new LinkedHashSet<>(matches(EMAIL, raw));
+
+        for (String line : lines) {
+            if (!line.contains("@")) continue;
+            String compact = line
+                    .replaceAll("\\s*@\\s*", "@")
+                    .replaceAll("\\s*([._%+\\-])\\s*", "$1");
+            Matcher m = EMAIL.matcher(compact);
+            while (m.find()) unique.add(m.group().trim());
+        }
+        return new ArrayList<>(unique);
+    }
+
+    private static boolean containsEmail(String line) {
+        if (EMAIL.matcher(line).find()) return true;
+        if (!line.contains("@")) return false;
+        String compact = line
+                .replaceAll("\\s*@\\s*", "@")
+                .replaceAll("\\s*([._%+\\-])\\s*", "$1");
+        return EMAIL.matcher(compact).find();
     }
 
     private static List<String> cleanLines(String raw) {
