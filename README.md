@@ -1,163 +1,127 @@
 <p align="center">
-  <img src="branding/arivemb-symbol.jpg" width="120" alt="ArivEmb">
+  <img src="branding/scanrecall-mark.svg" width="120" alt="ScanRecall">
 </p>
 
-<p align="center">
-  <strong>ArivEmb · Embedded Intelligence</strong>
-</p>
-
-<h1 align="center">CardKeep</h1>
+<h1 align="center">ScanRecall</h1>
 
 <p align="center">
-  A free, open-source, privacy-first business card scanner for Android.<br>
-  <strong>Built as an open-source utility by <a href="https://arivemb.com/">ArivEmb</a>.</strong>
-</p>
-
-<p align="center">
-  <a href="https://github.com/Madhan-Kurukondar/card-keep/releases/latest/download/CardKeep-Android-v0.2.1.apk"><strong>Download CardKeep for Android</strong></a>
+  <strong>Scan. Remember. Follow up.</strong><br>
+  Privacy-first business-card and event-contact capture for Android.<br>
+  <strong>by <a href="https://arivemb.com/">ArivEmb</a></strong>
 </p>
 
 ---
 
-## What CardKeep does
+## v0.3 beta
 
-Take a picture of a business card and CardKeep converts the information into an editable contact.
+This branch contains the **ScanRecall v0.3 beta**.
 
-CardKeep can store:
+The stable **CardKeep v0.2.1** release remains available and unchanged while ScanRecall is being tested.
 
-- name, company and job title
-- email, phone, mobile, website and address
-- where and when you met the person
-- how you met
-- why the contact is relevant
-- what you discussed
-- opportunity / use case
-- next action and follow-up date
-- status, priority, tags and general notes
+## What ScanRecall does
 
-You can then save the contact using Android's normal Contacts app or export it as a **vCard (.vcf)**.
+ScanRecall is not intended to be another generic QR-code reader.
 
-## Install CardKeep on your Android phone
+It combines:
 
-You do **not** need to know GitHub or programming.
+- visible text from a business card or event badge
+- standard QR/contact data when available
+- event/conference context
+- discussion notes
+- next actions and follow-up
 
-### 1. Download the app
+into one editable contact record.
 
-Tap:
+### Smart Scan
 
-### [Download CardKeep-Android-v0.2.1.apk](https://github.com/Madhan-Kurukondar/card-keep/releases/latest/download/CardKeep-Android-v0.2.1.apk)
+Take **one photo** of a person’s business card or event badge.
 
-If the direct link does not work, open the [latest CardKeep release](https://github.com/Madhan-Kurukondar/card-keep/releases/latest) and download the file ending in **.apk**.
+ScanRecall processes the same image locally using:
 
-### 2. Open the downloaded APK
+1. **OCR** for visible name, company, title, email, phone, address and other printed text.
+2. **QR/barcode detection** for structured or event-specific data.
+3. **Conference context** if you are scanning inside Conference Mode.
 
-On your phone, open **Downloads** or your browser's downloaded files and tap:
+Supported QR behavior in v0.3:
 
-`CardKeep-Android-v0.2.1.apk`
+- **vCard QR** → contact fields are extracted
+- **MECARD QR** → contact fields are extracted
+- **email / telephone QR** → contact information is extracted
+- **LinkedIn / profile / website QR** → URL is retained with the contact
+- **opaque event badge QR** → identifier is stored as context while visible badge text is OCR-read
 
-### 3. Allow installation if Android asks
-
-Because CardKeep is not yet distributed through Google Play, Android may display a warning such as:
-
-> For your security, your phone is not allowed to install unknown apps from this source.
-
-Choose **Settings** and temporarily enable **Allow from this source** for the browser or file manager you used to download CardKeep.
-
-Then return and tap **Install**.
-
-You can disable **Allow from this source** again after installation.
-
-### 4. Allow Camera access
-
-The first time you press **Scan business card**, Android will ask for Camera permission.
-
-Choose **While using the app**.
-
-CardKeep only requests Camera permission for scanning cards.
+ScanRecall does **not** attempt to bypass proprietary event-platform access controls. If an event QR only contains an opaque attendee token, ScanRecall preserves that token and uses visible badge text instead of pretending the QR contains personal details.
 
 ## Conference Mode
 
-Conference Mode is designed for trade fairs, exhibitions and recurring events such as **Embedded World**, **SMM** or **IAA**.
+Create an event once, for example:
 
-1. Create a conference with its name, location, dates and optional default tags.
-2. Open that conference and tap **Scan Next Card**.
-3. Every contact captured there stays grouped inside that conference area in CardKeep.
-4. CardKeep automatically prefills:
-   - **Event / where we met** = conference name
-   - **Location** = conference location
-   - **Date met** = current scan date
-   - **How we met** = conference default
-   - **Tags** = conference default tags
-5. The prefilled values remain editable for individual contacts.
+**Embedded World 2027 · Nuremberg**
 
-This avoids repetitive typing and makes post-event sorting and follow-up much easier.
+Then each person scanned inside that conference automatically inherits:
+
+- event name
+- location
+- scan date
+- how-we-met default
+- default tags
+
+The contact remains fully editable.
 
 ## Privacy
 
-CardKeep is designed to work locally on the phone.
+ScanRecall is designed to work locally.
 
-- no CardKeep account
-- no advertising
+- no ScanRecall account
+- no ads
 - no analytics
-- no CardKeep cloud backend
-- OCR is performed on the device
-- the Android app does **not** have Internet permission
-- business card images and CardKeep records remain on the device
+- no ScanRecall cloud backend
+- OCR runs on the device
+- QR/barcode recognition runs on the device
+- no Android Internet permission
+- card/badge images and ScanRecall records remain on the device
 
-CardKeep uses Android's system file picker for importing images and Android's normal contact-insert screen for saving contacts. It therefore does not need broad storage or contacts permissions for those operations.
+## Android identity
+
+The visible product name in v0.3 is **ScanRecall**.
+
+For upgrade compatibility during the beta, the Android application ID remains:
+
+`com.madhankurukondar.cardkeep`
+
+This is deliberate so a future approved ScanRecall release can upgrade the existing installation instead of becoming an unrelated second app.
+
+## Product identity
+
+ScanRecall has its own app icon.
+
+The visual system uses the ArivEmb palette, while the product identity is separate:
+
+**ScanRecall**  
+*by ArivEmb*
+
+The ArivEmb corporate logo is not used as the launcher icon.
 
 ## Open source
 
-CardKeep is released under the **Apache License 2.0**.
+Licensed under the **Apache License 2.0**.
 
-You are welcome to:
+You may use, fork, modify and redistribute the project under the license terms. Contributions can be proposed through pull requests; public visibility does not grant write access to this repository.
 
-- use it
-- study it
-- fork it
-- modify it
-- redistribute it
-- propose improvements through pull requests
+## Stable release
 
-Making a fork or pull request does **not** give anyone permission to directly change this repository. Changes to this repository remain controlled by its maintainers.
+Until v0.3 testing is complete, the existing stable build remains:
 
-## Current status
+**CardKeep v0.2.1**
 
-CardKeep is an early public Android release. Please report bugs or feature requests through [GitHub Issues](https://github.com/Madhan-Kurukondar/card-keep/issues).
+The v0.3 beta is intentionally developed on a separate branch:
 
-Current version: **v0.2.1**
-
-### Current features
-
-- business-card photo capture
-- Conference Mode with event-grouped contacts and automatic context prefilling
-- import existing business-card image
-- on-device OCR
-- editable contact fields
-- structured meeting and discussion notes
-- local CardKeep contact storage
-- contact search
-- native Android contact creation
-- vCard export
-- ArivEmb branded dark UI and app identity
-- offline operation
-
-## Planned
-
-- conference / trade-fair rapid scanning mode
-- duplicate detection and contact merging
-- front + back card scanning
-- improved OCR parsing
-- bulk image processing
-- CSV export
-- backup / restore
-- optional voice notes
-- iOS version
+`scanrecall-v0.3`
 
 ---
 
 <p align="center">
-  <strong>CardKeep</strong><br>
-  Open-source utility by <a href="https://arivemb.com/">ArivEmb</a><br>
-  Embedded intelligence. Engineered for scale.
+  <strong>ScanRecall</strong><br>
+  Remember the people you meet.<br>
+  by <a href="https://arivemb.com/">ArivEmb</a>
 </p>
