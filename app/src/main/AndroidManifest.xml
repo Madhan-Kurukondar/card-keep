@@ -2,10 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- CardKeep needs camera access only when the user chooses Scan business card. -->
+    <!-- ScanRecall needs camera access only when the user chooses Scan business card. -->
     <uses-permission android:name="android.permission.CAMERA" />
 
-    <!-- CardKeep is intentionally offline. -->
+    <!-- ScanRecall is intentionally offline. -->
     <uses-permission android:name="android.permission.INTERNET" tools:node="remove" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" tools:node="remove" />
 
@@ -18,12 +18,12 @@
 
     <application
         android:allowBackup="false"
-        android:icon="@drawable/arivemb_symbol"
-        android:roundIcon="@drawable/arivemb_symbol"
-        android:label="CardKeep"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="ScanRecall"
         android:supportsRtl="true"
         android:usesCleartextTraffic="false"
-        android:theme="@style/Theme.CardKeep">
+        android:theme="@style/Theme.ScanRecall">
         <activity
             android:name=".MainActivity"
             android:exported="true">
