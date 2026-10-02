@@ -47,9 +47,11 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 public class MainActivity extends Activity {
     private static final int REQ_CAMERA = 100;
@@ -1108,11 +1110,26 @@ public class MainActivity extends Activity {
     }
 
     private String mergeOcrText(String primary, String secondary) {
-        String a = primary == null ? "" : primary.trim();
-        String b = secondary == null ? "" : secondary.trim();
-        if (a.isEmpty()) return b;
-        if (b.isEmpty()) return a;
-        return a + "\n" + b;
+        // Keep the union of text found by both OCR passes. The original-image
+        // pass is best for normal dark text; the colour-robust pass recovers
+        // coloured/light headings and small punctuation. Exact duplicate lines
+        // are removed, but differing OCR readings are intentionally retained so
+        // the raw contact note remains a faithful fallback record.
+        List<String> merged = new ArrayList<>();
+        Set<String> seen = new LinkedHashSet<>();
+        appendOcrLines(primary, merged, seen);
+        appendOcrLines(secondary, merged, seen);
+        return String.join("\n", merged).trim();
+    }
+
+    private void appendOcrLines(String text, List<String> merged, Set<String> seen) {
+        if (text == null || text.trim().isEmpty()) return;
+        for (String line : text.split("\\r?\\n")) {
+            String cleaned = line.trim().replaceAll("\\s{2,}", " ");
+            if (cleaned.isEmpty()) continue;
+            String key = cleaned.toLowerCase(Locale.ROOT);
+            if (seen.add(key)) merged.add(cleaned);
+        }
     }
 
     private File copyToPrivateStorage(Uri sourceUri) throws Exception {
@@ -1213,6 +1230,13 @@ public class MainActivity extends Activity {
         addNote(b, "Priority", r.priority);
         addNote(b, "Tags", r.tags);
         addNote(b, "Notes", r.notes);
+
+        String rawOcr = safe(r.rawText).trim();
+        if (!rawOcr.isEmpty()) {
+            if (b.length() > 0) b.append("\n\n");
+            b.append("--- SCANRECALL OCR RAW TEXT ---\n");
+            b.append(rawOcr);
+        }
         return b.toString().trim();
     }
 
