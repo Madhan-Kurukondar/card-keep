@@ -18,16 +18,16 @@ This branch contains the **ScanRecall v0.3 beta**.
 
 The stable **CardKeep v0.2.1** release remains available and unchanged while ScanRecall is being tested.
 
-## Test build: v0.3.0-beta.3
+## Test build: v0.3.0-beta.4
 
-The current Android test build is **ScanRecall v0.3.0-beta.3**.
+The current Android test build is **ScanRecall v0.3.0-beta.4**.
 
-- Release page: https://github.com/Madhan-Kurukondar/card-keep/releases/tag/v0.3.0-beta.3
-- APK: https://github.com/Madhan-Kurukondar/card-keep/releases/download/v0.3.0-beta.3/ScanRecall-Android-v0.3.0-beta.3.apk
+- Release page: https://github.com/Madhan-Kurukondar/card-keep/releases/tag/v0.3.0-beta.4
+- APK: https://github.com/Madhan-Kurukondar/card-keep/releases/download/v0.3.0-beta.4/ScanRecall-Android-v0.3.0-beta.4.apk
 - Package: `com.madhankurukondar.scanrecall.beta`
 - It can be installed alongside CardKeep v0.2.1.
 
-Beta.3 adds the complete merged OCR transcript to Android contact Notes and vCard Notes, while retaining the colour-robust OCR and improved name/e-mail parsing from beta.2.
+Beta.4 keeps the beta.3 OCR/contact-note improvements and streamlines rapid conference scanning: after the Android contact-save screen closes, ScanRecall returns to the conference/home scan screen instead of leaving the previous contact editor open.
 
 ## What ScanRecall does
 
