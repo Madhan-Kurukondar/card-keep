@@ -4,6 +4,7 @@ on:
   push:
     branches: [ scanrecall-v0.3 ]
     paths:
+      - "app/build.gradle"
       - ".github/workflows/publish-scanrecall-v0.3-beta.yml"
   workflow_dispatch:
 
@@ -16,6 +17,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Read app version
+        id: version
+        shell: bash
+        run: |
+          VERSION_NAME="$(sed -n "s/.*versionName '\([^']*\)'.*/\1/p" app/build.gradle | head -n1)"
+          VERSION_CODE="$(sed -n 's/.*versionCode \([0-9][0-9]*\).*/\1/p' app/build.gradle | head -n1)"
+          test -n "$VERSION_NAME"
+          test -n "$VERSION_CODE"
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "Publishing ScanRecall $VERSION_NAME (code $VERSION_CODE)"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -37,8 +50,13 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug --stacktrace
 
       - name: Verify and package
+        shell: bash
         run: |
+          VERSION_NAME="${{ steps.version.outputs.version_name }}"
+          VERSION_CODE="${{ steps.version.outputs.version_code }}"
           APK="app/build/outputs/apk/debug/app-debug.apk"
+          OUT="ScanRecall-Android-v${VERSION_NAME}.apk"
+
           test -f "$APK"
 
           "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK"
@@ -53,75 +71,67 @@ jobs:
           echo "$MANIFEST"
           echo "$MANIFEST" | grep -q 'package="com.madhankurukondar.scanrecall.beta"'
           echo "$MANIFEST" | grep -q 'android:label="ScanRecall Beta"'
+          echo "$MANIFEST" | grep -q "android:versionName=\"${VERSION_NAME}\""
+          echo "$MANIFEST" | grep -q "android:versionCode=\"${VERSION_CODE}\""
 
           unzip -l "$APK" | grep -q 'res/mipmap-anydpi-v26/ic_launcher.xml'
           unzip -l "$APK" | grep -q 'res/mipmap-anydpi-v26/ic_launcher_round.xml'
 
           mkdir -p dist
-          cp "$APK" dist/ScanRecall-Android-v0.3.0-beta.1.apk
-          sha256sum dist/ScanRecall-Android-v0.3.0-beta.1.apk > dist/ScanRecall-Android-v0.3.0-beta.1.sha256
-          ls -lh dist/ScanRecall-Android-v0.3.0-beta.1.apk
+          cp "$APK" "dist/$OUT"
+          sha256sum "dist/$OUT" > "dist/${OUT%.apk}.sha256"
+          ls -lh "dist/$OUT"
 
       - name: Upload canonical beta artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ScanRecall-Android-v0.3.0-beta.1
+          name: ScanRecall-Android-v${{ steps.version.outputs.version_name }}
           path: dist/
           if-no-files-found: error
 
       - name: Create ScanRecall beta pre-release
         env:
           GH_TOKEN: ${{ github.token }}
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+        shell: bash
         run: |
-          cat > RELEASE_NOTES.md <<'EOF'
-          # ScanRecall Android v0.3.0-beta.1
+          TAG="v${VERSION_NAME}"
+          APK="dist/ScanRecall-Android-v${VERSION_NAME}.apk"
+          SHA="dist/ScanRecall-Android-v${VERSION_NAME}.sha256"
 
-          This is a **pre-release beta**. CardKeep v0.2.1 remains the stable release.
+          cat > RELEASE_NOTES.md <<EOF
+          # ScanRecall Android ${TAG}
 
-          ## Safe side-by-side testing
-          ScanRecall Beta uses a separate Android application ID:
-          `com.madhankurukondar.scanrecall.beta`
+          This is a **pre-release beta** for Android testing. CardKeep v0.2.1 remains the stable release.
 
-          It can therefore remain installed alongside the working CardKeep v0.2.1 app without replacing its local records.
+          ## What changed in beta.2
+          - dual-pass, colour-robust OCR for business cards with coloured names or headings
+          - stronger name detection using layout, title/company exclusion and e-mail correlation
+          - better handling of OCR-spaced e-mail punctuation
+          - normalization of hyphen-like Unicode characters in e-mail addresses
+          - Smart Scan continues to combine visible text with QR/barcode data
+          - separate Android application ID keeps this beta installable alongside CardKeep
 
-          ## ScanRecall identity
-          - renamed product identity: ScanRecall
-          - dedicated ScanRecall adaptive Android launcher icon
-          - ArivEmb visual palette
-          - "by ArivEmb" product attribution
-
-          ## Smart Scan
-          One captured image is processed for both visible text and QR/barcode data.
-
-          - business-card OCR
-          - event-badge OCR
-          - vCard QR parsing
-          - MECARD QR parsing
-          - email and telephone QR parsing
-          - LinkedIn / profile / website QR retention
-          - opaque event badge QR/token retention as context
-          - Conference Mode context applied to the resulting contact
-
-          ScanRecall does not attempt to bypass proprietary event-platform QR access controls.
-
-          ## Privacy
-          - OCR runs on device
-          - barcode/QR recognition uses the bundled ML Kit model
-          - no Internet permission
-          - no advertising
-          - no ScanRecall cloud backend
-
-          ## Existing core retained
-          - local contact/context storage
-          - editable OCR result
+          ## Test focus
+          Please test cards with:
+          - red, blue or other coloured person names
+          - small hyphens, periods, underscores or plus signs in e-mail addresses
+          - multiple title/company lines around the name
+          - QR or barcode data together with printed text
           - Conference Mode
-          - Android native contact creation
-          - vCard export
+
+          ## Privacy and package checks
+          - OCR and QR recognition run on device
+          - no Android Internet permission
+          - no ads, analytics or ScanRecall cloud backend
+          - package: `com.madhankurukondar.scanrecall.beta`
+
+          Review every OCR result before saving a contact; beta OCR should not invent missing punctuation.
           EOF
 
-          if gh release view v0.3.0-beta.1 >/dev/null 2>&1; then
-            gh release upload v0.3.0-beta.1               dist/ScanRecall-Android-v0.3.0-beta.1.apk               dist/ScanRecall-Android-v0.3.0-beta.1.sha256               --clobber
-            gh release edit v0.3.0-beta.1               --target "$GITHUB_SHA"               --title "ScanRecall Android v0.3.0-beta.1"               --notes-file RELEASE_NOTES.md               --prerelease
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" "$SHA" --clobber
+            gh release edit "$TAG"               --target "$GITHUB_SHA"               --title "ScanRecall Android ${TAG}"               --notes-file RELEASE_NOTES.md               --prerelease
           else
-            gh release create v0.3.0-beta.1               dist/ScanRecall-Android-v0.3.0-beta.1.apk               dist/ScanRecall-Android-v0.3.0-beta.1.sha256               --target "$GITHUB_SHA"               --title "ScanRecall Android v0.3.0-beta.1"               --notes-file RELEASE_NOTES.md               --prerelease
+            gh release create "$TAG" "$APK" "$SHA"               --target "$GITHUB_SHA"               --title "ScanRecall Android ${TAG}"               --notes-file RELEASE_NOTES.md               --prerelease
           fi
