@@ -104,16 +104,19 @@ jobs:
 
           This is a **pre-release beta** for Android testing. CardKeep v0.2.1 remains the stable release.
 
-          ## What changed in beta.2
-          - dual-pass, colour-robust OCR for business cards with coloured names or headings
-          - stronger name detection using layout, title/company exclusion and e-mail correlation
-          - better handling of OCR-spaced e-mail punctuation
-          - normalization of hyphen-like Unicode characters in e-mail addresses
+          ## What changed in beta.3
+          - complete raw OCR text is now copied into the Android contact Notes field
+          - the same raw OCR text is included in exported vCards
+          - OCR text is merged from the original image and the colour-robust pass
+          - duplicate OCR lines are removed while differing readings are retained as a fallback
+          - coloured-name OCR, name detection and e-mail punctuation improvements from beta.2 remain
           - Smart Scan continues to combine visible text with QR/barcode data
           - separate Android application ID keeps this beta installable alongside CardKeep
 
           ## Test focus
           Please test cards with:
+          - save a scanned contact and confirm the full OCR transcript appears in Android Contacts > Notes
+          - confirm coloured text is present in the OCR transcript
           - red, blue or other coloured person names
           - small hyphens, periods, underscores or plus signs in e-mail addresses
           - multiple title/company lines around the name
