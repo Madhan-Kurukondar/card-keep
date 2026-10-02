@@ -124,7 +124,7 @@ jobs:
           - OCR and QR recognition run on device
           - no Android Internet permission
           - no ads, analytics or ScanRecall cloud backend
-          - package: `com.madhankurukondar.scanrecall.beta`
+          - package: com.madhankurukondar.scanrecall.beta
 
           Review every OCR result before saving a contact; beta OCR should not invent missing punctuation.
           EOF
