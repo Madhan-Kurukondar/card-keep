@@ -104,24 +104,20 @@ jobs:
 
           This is a **pre-release beta** for Android testing. CardKeep v0.2.1 remains the stable release.
 
-          ## What changed in beta.3
-          - complete raw OCR text is now copied into the Android contact Notes field
-          - the same raw OCR text is included in exported vCards
-          - OCR text is merged from the original image and the colour-robust pass
-          - duplicate OCR lines are removed while differing readings are retained as a fallback
-          - coloured-name OCR, name detection and e-mail punctuation improvements from beta.2 remain
-          - Smart Scan continues to combine visible text with QR/barcode data
-          - separate Android application ID keeps this beta installable alongside CardKeep
+          ## What changed in beta.4
+          - after returning from Android's contact-save screen, ScanRecall now returns to the conference/home scan screen instead of leaving the previous contact editor open
+          - the ScanRecall record is saved before Android Contacts opens, so rapid-scan flow does not risk losing the captured contact
+          - no extra save/scan buttons were added to the contact editor; the existing Scan Next Person action remains the single rapid-scan entry point
+          - complete raw OCR text remains copied into Android contact Notes and exported vCards
+          - colour-robust OCR, name detection and e-mail punctuation improvements remain
 
           ## Test focus
           Please test cards with:
-          - save a scanned contact and confirm the full OCR transcript appears in Android Contacts > Notes
+          - in Conference Mode, scan a person, choose Save to Phone Contacts, finish or cancel Android's contact screen, and confirm ScanRecall returns to the conference screen with Scan Next Person ready
+          - choose Save in ScanRecall and confirm the same conference/home return behavior remains
+          - confirm the ScanRecall record still exists even if the Android contact screen is cancelled
+          - confirm the full OCR transcript appears in Android Contacts > Notes when the phone contact is saved
           - confirm coloured text is present in the OCR transcript
-          - red, blue or other coloured person names
-          - small hyphens, periods, underscores or plus signs in e-mail addresses
-          - multiple title/company lines around the name
-          - QR or barcode data together with printed text
-          - Conference Mode
 
           ## Privacy and package checks
           - OCR and QR recognition run on device
