@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Scan corners -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#D83FB5"
+        android:strokeWidth="5"
+        android:strokeLineCap="round"
+        android:pathData="M25,39 L25,25 L39,25 M69,25 L83,25 L83,39 M25,69 L25,83 L39,83 M69,83 L83,83 L83,69" />
+
+    <!-- Contact card -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#F5F7FA"
+        android:strokeWidth="3.2"
+        android:strokeLineJoin="round"
+        android:pathData="M34,37 L74,37 L74,71 L34,71 Z" />
+
+    <!-- Person head -->
+    <path
+        android:fillColor="#F5F7FA"
+        android:pathData="M46,47 A5,5 0,1 1 45.99,47" />
+
+    <!-- Person shoulders -->
+    <path
+        android:fillColor="#F5F7FA"
+        android:pathData="M38,61 C39,55 43,52 46,52 C49,52 53,55 54,61 Z" />
+
+    <!-- Contact text -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#A8B2C1"
+        android:strokeWidth="2.4"
+        android:strokeLineCap="round"
+        android:pathData="M59,48 L68,48 M59,55 L68,55 M59,62 L66,62" />
+
+    <!-- Recall node -->
+    <path
+        android:fillColor="#26C6DA"
+        android:pathData="M76,67 A4,4 0,1 1 75.99,67" />
+</vector>

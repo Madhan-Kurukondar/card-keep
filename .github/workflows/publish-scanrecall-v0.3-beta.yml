@@ -1,0 +1,136 @@
+name: Publish ScanRecall v0.3 beta
+
+on:
+  push:
+    branches: [ scanrecall-v0.3 ]
+    paths:
+      - "app/build.gradle"
+      - ".github/workflows/publish-scanrecall-v0.3-beta.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read app version
+        id: version
+        shell: bash
+        run: |
+          VERSION_NAME="$(sed -n "s/.*versionName '\([^']*\)'.*/\1/p" app/build.gradle | head -n1)"
+          VERSION_CODE="$(sed -n 's/.*versionCode \([0-9][0-9]*\).*/\1/p' app/build.gradle | head -n1)"
+          test -n "$VERSION_NAME"
+          test -n "$VERSION_CODE"
+          echo "version_name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          echo "Publishing ScanRecall $VERSION_NAME (code $VERSION_CODE)"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.13
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+
+      - name: Install Android SDK 36
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Build canonical beta APK
+        run: gradle --no-daemon :app:assembleDebug --stacktrace
+
+      - name: Verify and package
+        shell: bash
+        run: |
+          VERSION_NAME="${{ steps.version.outputs.version_name }}"
+          VERSION_CODE="${{ steps.version.outputs.version_code }}"
+          APK="app/build/outputs/apk/debug/app-debug.apk"
+          OUT="ScanRecall-Android-v${VERSION_NAME}.apk"
+
+          test -f "$APK"
+
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --verbose "$APK"
+
+          PERMS="$("$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest permissions "$APK")"
+          echo "$PERMS"
+          echo "$PERMS" | grep -q "android.permission.CAMERA"
+          ! echo "$PERMS" | grep -q "android.permission.INTERNET"
+          ! echo "$PERMS" | grep -q "android.permission.ACCESS_NETWORK_STATE"
+
+          MANIFEST="$("$ANDROID_HOME/cmdline-tools/latest/bin/apkanalyzer" manifest print "$APK")"
+          echo "$MANIFEST"
+          echo "$MANIFEST" | grep -q 'package="com.madhankurukondar.scanrecall.beta"'
+          echo "$MANIFEST" | grep -q 'android:label="ScanRecall Beta"'
+          echo "$MANIFEST" | grep -q "android:versionName=\"${VERSION_NAME}\""
+          echo "$MANIFEST" | grep -q "android:versionCode=\"${VERSION_CODE}\""
+
+          unzip -l "$APK" | grep -q 'res/mipmap-anydpi-v26/ic_launcher.xml'
+          unzip -l "$APK" | grep -q 'res/mipmap-anydpi-v26/ic_launcher_round.xml'
+
+          mkdir -p dist
+          cp "$APK" "dist/$OUT"
+          sha256sum "dist/$OUT" > "dist/${OUT%.apk}.sha256"
+          ls -lh "dist/$OUT"
+
+      - name: Upload canonical beta artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ScanRecall-Android-v${{ steps.version.outputs.version_name }}
+          path: dist/
+          if-no-files-found: error
+
+      - name: Create ScanRecall beta pre-release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+        shell: bash
+        run: |
+          TAG="v${VERSION_NAME}"
+          APK="dist/ScanRecall-Android-v${VERSION_NAME}.apk"
+          SHA="dist/ScanRecall-Android-v${VERSION_NAME}.sha256"
+
+          cat > RELEASE_NOTES.md <<EOF
+          # ScanRecall Android ${TAG}
+
+          This is a **pre-release beta** for Android testing. CardKeep v0.2.1 remains the stable release.
+
+          ## What changed in beta.4
+          - after returning from Android's contact-save screen, ScanRecall now returns to the conference/home scan screen instead of leaving the previous contact editor open
+          - the ScanRecall record is saved before Android Contacts opens, so rapid-scan flow does not risk losing the captured contact
+          - no extra save/scan buttons were added to the contact editor; the existing Scan Next Person action remains the single rapid-scan entry point
+          - complete raw OCR text remains copied into Android contact Notes and exported vCards
+          - colour-robust OCR, name detection and e-mail punctuation improvements remain
+
+          ## Test focus
+          Please test cards with:
+          - in Conference Mode, scan a person, choose Save to Phone Contacts, finish or cancel Android's contact screen, and confirm ScanRecall returns to the conference screen with Scan Next Person ready
+          - choose Save in ScanRecall and confirm the same conference/home return behavior remains
+          - confirm the ScanRecall record still exists even if the Android contact screen is cancelled
+          - confirm the full OCR transcript appears in Android Contacts > Notes when the phone contact is saved
+          - confirm coloured text is present in the OCR transcript
+
+          ## Privacy and package checks
+          - OCR and QR recognition run on device
+          - no Android Internet permission
+          - no ads, analytics or ScanRecall cloud backend
+          - package: com.madhankurukondar.scanrecall.beta
+
+          Review every OCR result before saving a contact; beta OCR should not invent missing punctuation.
+          EOF
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" "$SHA" --clobber
+            gh release edit "$TAG"               --target "$GITHUB_SHA"               --title "ScanRecall Android ${TAG}"               --notes-file RELEASE_NOTES.md               --prerelease
+          else
+            gh release create "$TAG" "$APK" "$SHA"               --target "$GITHUB_SHA"               --title "ScanRecall Android ${TAG}"               --notes-file RELEASE_NOTES.md               --prerelease
+          fi
