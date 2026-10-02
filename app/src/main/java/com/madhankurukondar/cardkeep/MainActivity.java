@@ -58,6 +58,7 @@ public class MainActivity extends Activity {
     private static final int REQ_GALLERY = 101;
     private static final int REQ_EXPORT_VCARD = 102;
     private static final int REQ_CAMERA_PERMISSION = 103;
+    private static final int REQ_CONTACT_INSERT = 104;
 
     // ArivEmb visual system — presentation only.
     private static final int SILICON = Color.rgb(7, 10, 18);
@@ -959,6 +960,17 @@ public class MainActivity extends Activity {
         if (requestCode == REQ_EXPORT_VCARD && resultCode == RESULT_OK && data != null && data.getData() != null && pendingExportRecord != null) {
             writeVCard(data.getData(), pendingExportRecord);
             pendingExportRecord = null;
+            return;
+        }
+
+        if (requestCode == REQ_CONTACT_INSERT) {
+            // The ScanRecall record was already saved before Android Contacts
+            // opened. Android contact apps do not consistently report whether
+            // the user pressed Save or Cancel, so do not claim phone-save
+            // success here. Simply return to the conference/home scan screen,
+            // where the next-card action is immediately available.
+            toast("ScanRecall record saved · ready for next scan");
+            returnFromEditor();
         }
     }
 
@@ -1180,7 +1192,7 @@ public class MainActivity extends Activity {
         if (!data.isEmpty()) intent.putParcelableArrayListExtra(ContactsContract.Intents.Insert.DATA, data);
 
         try {
-            startActivity(intent);
+            startActivityForResult(intent, REQ_CONTACT_INSERT);
         } catch (Exception e) {
             toast("No contacts app is available");
         }
